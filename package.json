@@ -17,12 +17,14 @@
     },
     "dependencies": {
         "@greymass/buoy": "^1.0.3",
-        "tslib": "^2.1.0"
+        "eosio-signing-request": "^2.5.2",
+        "isomorphic-ws": "^5.0.0",
+        "pako": "^2.0.4",
+        "tslib": "^2.1.0",
+        "uuid": "^8.3.2"
     },
     "peerDependencies": {
-        "@wharfkit/session": "^0.3.0-ui-5",
-        "eosio-signing-request": "^2.5.2",
-        "pako": "^2.0.4"
+        "@wharfkit/session": "^0.3.0-ui-5"
     },
     "devDependencies": {
         "@rollup/plugin-alias": "^3.1.4",
@@ -45,7 +47,6 @@
         "eslint-config-prettier": "^8.1.0",
         "eslint-plugin-prettier": "^4.0.0",
         "gh-pages": "^4.0.0",
-        "isomorphic-ws": "^5.0.0",
         "mocha": "^10.0.0",
         "node-fetch": "^2.6.1",
         "nyc": "^15.1.0",

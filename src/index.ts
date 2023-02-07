@@ -43,15 +43,16 @@ export class WalletPluginAnchor implements WalletPlugin {
      * @param options WalletPluginLoginOptions
      * @returns Promise<WalletPluginLoginResponse>
      */
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     async login(
         context: LoginContext,
         options: WalletPluginLoginOptions
     ): Promise<WalletPluginLoginResponse> {
-        context.ui.status('Preparing request to Anchor...')
+        context.ui.status('Preparing request for Anchor...')
 
+        // Create the identity request to be presented to the user
         const {callback, request} = await createIdentityRequest(context, options)
 
+        // Tell Wharf we need to prompt the user with a QR code and a button
         context.ui.prompt({
             title: 'Login with Anchor',
             body: 'Scan the QR-code with Anchor on another device or use the button to open it here.',
@@ -67,47 +68,70 @@ export class WalletPluginAnchor implements WalletPlugin {
                 },
             ],
         })
-        // context.ui.status('Use link... ' + String(request))
 
-        // wait for callback or user cancel
-        // let done = false
+        // Use the buoy-client to create a promise and wait for a response to the identity request
         const walletResponse = receive({...callback, WebSocket})
+
         // TODO: Implement cancel logic from the UI
-        // const cancel = new Promise<never>((resolve, reject) => {
-        //     t.onRequest(request, (reason) => {
-        //         if (done) {
-        //             // ignore any cancel calls once callbackResponse below has resolved
-        //             return
-        //         }
-        //         const error = typeof reason === 'string' ? new CancelError(reason) : reason
-        //         if (t.recoverError && t.recoverError(error, request) === true) {
-        //             // transport was able to recover from the error
-        //             return
-        //         }
-        //         walletResponse
-        //         callback.cancel()
-        //         reject(error)
-        //     })
-        // })
-        const callbackResponse = await Promise.race([
-            walletResponse,
-            // cancel
-        ])
-        // done = true
+        const cancel = new Promise<never>(() =>
+            //resolve,
+            //reject
+            {
+                // // Code from anchor-link...
+                // t.onRequest(request, (reason) => {
+                //     if (done) {
+                //         // ignore any cancel calls once callbackResponse below has resolved
+                //         return
+                //     }
+                //     const error = typeof reason === 'string' ? new CancelError(reason) : reason
+                //     if (t.recoverError && t.recoverError(error, request) === true) {
+                //         // transport was able to recover from the error
+                //         return
+                //     }
+                //     walletResponse
+                //     callback.cancel()
+                //     reject(error)
+                // })
+            }
+        )
+
+        // Await a promise race to wait for either the wallet response or the cancel
+        const callbackResponse = await Promise.race([walletResponse, cancel])
+
+        // If the promise was rejected, throw an error
         if (typeof callbackResponse.rejected === 'string') {
             throw new Error(callbackResponse.rejected)
         }
+
+        // Process the identity request callback payload
         const payload = JSON.parse(callbackResponse) as CallbackPayload
         if (payload.sa === undefined || payload.sp === undefined || payload.cid === undefined) {
             throw new Error('Invalid response from Anchor')
         }
-        const signer = PermissionLevel.from({
-            actor: payload.sa,
-            permission: payload.sp,
-        })
+
+        // TODO: Response validation
+        // https://github.com/greymass/anchor-link/blob/508599dd3fb3420b60ee2fa470bf60ce9ddca1c5/src/link.ts#L379-L429
+        // Note: We can skip the resolution/broadcasting, happens in session transact
+
+        // TODO: Optional proof verification
+        // https://github.com/greymass/anchor-link/blob/508599dd3fb3420b60ee2fa470bf60ce9ddca1c5/src/link.ts#L513-L552
+
+        // TODO: Create session metadata from the response
+        // https://github.com/greymass/anchor-link/blob/508599dd3fb3420b60ee2fa470bf60ce9ddca1c5/src/utils.ts#L46-L68
+
+        // TODO: Establish the buoy session - do we need this or is it handled by wharf itself?
+        // https://github.com/greymass/anchor-link/blob/master/src/link.ts#L582-L611
+
+        // TODO: The request_key and other metadata needs to be persisted for session restoration
+        // https://github.com/greymass/anchor-link/blob/master/src/link.ts#L612
+
+        // Return the chain and permission level to use
         return {
             chain: Checksum256.from(payload.cid),
-            permissionLevel: signer,
+            permissionLevel: PermissionLevel.from({
+                actor: payload.sa,
+                permission: payload.sp,
+            }),
         }
     }
     /**

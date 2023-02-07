@@ -1,91 +1,79 @@
-import {
-    Bytes,
-    Name,
-    PublicKey,
-    SigningRequest,
-    Struct,
-    TimePointSec,
-    UInt32,
-    UInt64,
-} from '@wharfkit/session'
-
-import {v4 as uuid} from 'uuid'
+import {ReceiveOptions} from '@greymass/buoy'
+import {LoginContext, PrivateKey, SigningRequest, WalletPluginLoginOptions} from '@wharfkit/session'
 import zlib from 'pako'
+import {v4 as uuid} from 'uuid'
 
-@Struct.type('buoy_message')
-export class BuoyMessage extends Struct {
-    @Struct.field('public_key') from!: PublicKey
-    @Struct.field('uint64') nonce!: UInt64
-    @Struct.field('bytes') ciphertext!: Bytes
-    @Struct.field('uint32') checksum!: UInt32
-}
+import {BuoySession} from './buoy'
 
-@Struct.type('buoy_session')
-export class BuoySession extends Struct {
-    @Struct.field('name') session_name!: Name
-    @Struct.field('public_key') request_key!: PublicKey
-    @Struct.field('string', {extension: true}) user_agent?: string
-}
+/**
+ * createIdentityRequest
+ *
+ * @param context LoginContext
+ * @param options WalletPluginLoginOptions
+ * @returns
+ */
+export async function createIdentityRequest(
+    context: LoginContext,
+    options: WalletPluginLoginOptions
+): Promise<{
+    callback
+    request: SigningRequest
+}> {
+    // TODO:
+    // Create a new private key and public key to act as the request key
+    const privateKey = PrivateKey.generate('K1')
+    const requestKey = privateKey.toPublic()
 
-@Struct.type('buoy_info')
-export class BuoyInfo extends Struct {
-    @Struct.field('time_point_sec') expiration!: TimePointSec
-}
+    // Create a new BuoySession struct to be used as the info field
+    const createInfo = BuoySession.from({
+        session_name: options.appName,
+        request_key: requestKey,
+        user_agent: getUserAgent(),
+    })
 
-export function getUserAgent() {
-    // TODO: Add version number to user agent string
-    let agent = `@wharfkit/wallet-plugin-anchor `
-    if (typeof navigator !== 'undefined') {
-        agent += navigator.userAgent
-    }
-    return agent
-}
+    // Determine based on the options whether this is a multichain request
+    const isMultiChain = !(options.chain || options.chains.length === 1)
 
-export async function createIdentityRequest(context, options) {
-    // const privateKey = PrivateKey.generate('K1')
-    // const requestKey = privateKey.toPublic()
-    // const createInfo = BuoySession.from({
-    //     session_name: options.appName,
-    //     request_key: requestKey,
-    //     user_agent: getUserAgent(),
-    // })
-
-    // const {request, callback} = await this.createRequest({
-    //     identity: {permission: args.requestPermission, scope: args.scope},
-    //     info: args.info,
-    // })
-
-    let request: SigningRequest
-    const args = {identity: {permission: options.permissionLevel, scope: options.appName}}
-    if (options.chain || options.chains.length === 1) {
-        // const c = options.chain || options.chains[0]
-        request = await SigningRequest.create(
-            {
-                ...args,
-                chainId: options.chain?.id,
-                broadcast: false,
+    // Create the request
+    const request = await SigningRequest.create(
+        {
+            identity: {
+                permission: options.permissionLevel,
+                scope: options.appName,
             },
-            {zlib}
-        )
-    } else {
-        // multi-chain request
-        request = await SigningRequest.create(
-            {
-                ...args,
-                chainId: null,
-                chainIds: options.chains.map((c) => c.id),
-                broadcast: false,
+            info: {
+                link: createInfo,
+                scope: options.appName,
             },
-            {zlib}
-        )
-    }
-    const callback = {
+            chainId: isMultiChain ? null : options.chain?.id,
+            chainIds: isMultiChain ? options.chains.map((c) => c.id) : undefined,
+            broadcast: false,
+        },
+        {zlib}
+    )
+
+    // The buoy callback data for this request
+    const callback: ReceiveOptions = {
         service: `https://cb.anchor.link`,
         channel: uuid(),
     }
+
+    // Specify the callback URL on the request itself so the wallet can respond to it
     request.setCallback(`${callback.service}/${callback.channel}`, true)
+
+    // Return the request and the callback data
     return {
         callback,
         request,
     }
+}
+
+export function getUserAgent(): string {
+    // TODO: Pull proper version number to add to user agent string
+    const version = '0.0.1'
+    let agent = `@wharfkit/wallet-plugin-anchor ${version}`
+    if (typeof navigator !== 'undefined') {
+        agent += ' ' + navigator.userAgent
+    }
+    return agent
 }
