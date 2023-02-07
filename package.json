@@ -40,7 +40,7 @@
         "@types/uuid": "^8",
         "@typescript-eslint/eslint-plugin": "^5.20.0",
         "@typescript-eslint/parser": "^5.20.0",
-        "@wharfkit/session": "^0.3.0-ui-5",
+        "@wharfkit/session": "^0.3.0-ui-6",
         "chai": "^4.3.4",
         "eosio-signing-request": "^2.5.2",
         "eslint": "^8.13.0",
