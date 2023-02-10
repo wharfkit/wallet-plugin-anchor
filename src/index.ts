@@ -1,4 +1,4 @@
-import {
+import session, {
     Checksum256,
     LoginContext,
     PermissionLevel,
@@ -12,9 +12,9 @@ import {
     WalletPluginMetadata,
 } from '@wharfkit/session'
 
-import {receive} from '@greymass/buoy'
+import {receive, send} from '@greymass/buoy'
 import WebSocket from 'isomorphic-ws'
-import {createIdentityRequest} from './anchor'
+import {createIdentityRequest, createTransactionRequest} from './anchor'
 import {CallbackPayload} from '@wharfkit/session'
 
 export class WalletPluginAnchor implements WalletPlugin {
@@ -143,9 +143,42 @@ export class WalletPluginAnchor implements WalletPlugin {
      */
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     async sign(resolved: ResolvedSigningRequest, context: TransactContext): Promise<Signature> {
+        // Create the identity request to be presented to the user
+        const {callback, request} = await createTransactionRequest(context)
+
+        // Tell Wharf we need to prompt the user with a QR code and a button
+        context.ui.prompt({
+            title: 'Sign',
+            body: 'Please open the Anchor Wallet on "DEVICE" to review and sign the transaction.',
+            elements: [
+                {
+                    type: 'countdown',
+                    data: resolved.transaction.expiration.toDate().toISOString(),
+                },
+                {
+                    type: 'button',
+                    label: 'Sign manually or with another device',
+                    data: String(resolved),
+                },
+            ],
+        })
+
+        const {channel} = context.storage.get()
+
+        send(request, {channel, service: 'cb.anchor.link'})
+
+        redirectToAnchor()
+
+        // Use the buoy-client to create a promise and wait for a response to the identity request
+        const walletResponse = receive({...callback, WebSocket})
+
         // Example response...
         return Signature.from(
             'SIG_K1_KfqBXGdSRnVgZbAXyL9hEYbAvrZjcaxUCenD7Z3aX6yzf6MEyc4Cy3ywToD4j3SKkzSg7L1uvRUirEPHwAwrbg5c9z27Z3'
         )
     }
+}
+
+function redirectToAnchor(prompt = 'open') {
+    window.location.href = `anchor://${prompt}`
 }
