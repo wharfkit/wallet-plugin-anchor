@@ -1,5 +1,11 @@
 import {ReceiveOptions} from '@greymass/buoy'
-import {LoginContext, PrivateKey, SigningRequest, WalletPluginLoginOptions} from '@wharfkit/session'
+import {
+    LoginContext,
+    PrivateKey,
+    SigningRequest,
+    WalletPluginLoginOptions,
+    ResolvedSigningRequest,
+} from '@wharfkit/session'
 import zlib from 'pako'
 import {v4 as uuid} from 'uuid'
 
@@ -53,10 +59,7 @@ export async function createIdentityRequest(
     )
 
     // The buoy callback data for this request
-    const callback: ReceiveOptions = {
-        service: `https://cb.anchor.link`,
-        channel: uuid(),
-    }
+    const callback = prepareCallbackChannel()
 
     // Specify the callback URL on the request itself so the wallet can respond to it
     request.setCallback(`${callback.service}/${callback.channel}`, true)
@@ -68,6 +71,21 @@ export async function createIdentityRequest(
     }
 }
 
+/**
+ * prepareTransactionRequest
+ *
+ * @param resolved ResolvedSigningRequest
+ * @returns
+ */
+
+export function setTransactionCallback(resolved: ResolvedSigningRequest) {
+    const callback = prepareCallbackChannel()
+
+    resolved.request.setCallback(`${callback.service}/${callback.channel}`, true)
+
+    return callback
+}
+
 export function getUserAgent(): string {
     // TODO: Pull proper version number to add to user agent string
     const version = '0.0.1'
@@ -76,4 +94,12 @@ export function getUserAgent(): string {
         agent += ' ' + navigator.userAgent
     }
     return agent
+}
+
+function prepareCallbackChannel(): ReceiveOptions {
+    // The buoy callback data for this request
+    return {
+        service: `https://cb.anchor.link`,
+        channel: uuid(),
+    }
 }

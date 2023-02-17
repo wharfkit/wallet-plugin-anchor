@@ -573,9 +573,9 @@
     eslint-visitor-keys "^3.3.0"
 
 "@wharfkit/session@^0.3.0-ui-6":
-  version "0.3.0-ui-6"
-  resolved "https://registry.yarnpkg.com/@wharfkit/session/-/session-0.3.0-ui-6.tgz#511fa3bf01ba30ede9101a7b9d1fa70d790ff503"
-  integrity sha512-xuVmO/jTW0Riu8E4cX98B8kv0R/hHmC+9d45C+grlGk2kR2iaEQKHgsJQ7XbV5BX3aXoaYW7ix+mnEYk0aE/qw==
+  version "0.3.0-ui-9"
+  resolved "https://registry.yarnpkg.com/@wharfkit/session/-/session-0.3.0-ui-9.tgz#6ad28cbba846ce2ace1d9aa526c0c5c0323af1a7"
+  integrity sha512-Zj4Zhm3w2triU9ZaWXd9WojwkrDx0haM3n1F1iZPU/FYionyjhIQYkTxaXasyDk3+Hgi5JEcLVWdEuiEzOwQkw==
   dependencies:
     "@greymass/eosio" "^0.6.8"
     eosio-signing-request "^2.5.2"
