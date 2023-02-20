@@ -1,4 +1,6 @@
 import {ReceiveOptions} from '@greymass/buoy'
+import {AES_CBC} from '@greymass/miniaes'
+import {Checksum256, Checksum512, PublicKey, Serializer, UInt64, Bytes} from '@greymass/eosio'
 import {
     LoginContext,
     PrivateKey,
@@ -10,6 +12,9 @@ import zlib from 'pako'
 import {v4 as uuid} from 'uuid'
 
 import {BuoySession} from './buoy'
+import {logWarn, snakeToCamel} from './utils'
+
+import {SealedMessage} from './anchor-types'
 
 /**
  * createIdentityRequest
@@ -24,6 +29,8 @@ export async function createIdentityRequest(
 ): Promise<{
     callback
     request: SigningRequest
+    requestKey: PublicKey
+    privateKey: PrivateKey
 }> {
     // TODO:
     // Create a new private key and public key to act as the request key
@@ -68,6 +75,8 @@ export async function createIdentityRequest(
     return {
         callback,
         request,
+        requestKey,
+        privateKey,
     }
 }
 
@@ -102,4 +111,27 @@ function prepareCallbackChannel(): ReceiveOptions {
         service: `https://cb.anchor.link`,
         channel: uuid(),
     }
+}
+
+export function sealMessage(
+    message: string,
+    privateKey: PrivateKey,
+    publicKey: PublicKey,
+    nonce?: UInt64
+): SealedMessage {
+    const secret = privateKey.sharedSecret(publicKey)
+    if (!nonce) {
+        nonce = UInt64.random()
+    }
+    const key = Checksum512.hash(Serializer.encode({object: nonce}).appending(secret.array))
+    const cbc = new AES_CBC(key.array.slice(0, 32), key.array.slice(32, 48))
+    const ciphertext = Bytes.from(cbc.encrypt(Bytes.from(message, 'utf8').array))
+    const checksumView = new DataView(Checksum256.hash(key.array).array.buffer)
+    const checksum = checksumView.getUint32(0, true)
+    return SealedMessage.from({
+        from: privateKey.toPublic(),
+        nonce,
+        ciphertext,
+        checksum,
+    })
 }

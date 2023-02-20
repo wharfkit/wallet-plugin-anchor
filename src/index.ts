@@ -1,3 +1,5 @@
+import {PrivateKey, PublicKey, Name, Serializer} from '@greymass/eosio'
+
 import {
     Checksum256,
     LoginContext,
@@ -12,17 +14,28 @@ import {
     WalletPluginSignResponse,
 } from '@wharfkit/session'
 
-import {v4 as uuid} from 'uuid'
-
 import {receive, send} from '@greymass/buoy'
 import WebSocket from 'isomorphic-ws'
-import {createIdentityRequest, setTransactionCallback} from './anchor'
 import {CallbackPayload} from '@wharfkit/session'
+
+import {createIdentityRequest, setTransactionCallback} from './anchor'
+
+import {sealMessage} from './anchor'
 
 import {extractSignaturesFromCallback} from './esr'
 
-const sessionChannel = uuid()
-const sessionService = 'https://cb.anchor.link'
+interface AnchorSession {
+    requestKey: PublicKey
+    privateKey: PrivateKey
+    chain: Checksum256
+    auth: PermissionLevel
+    identifier: Name
+    signerKey: PublicKey
+    channelUrl: string
+    channelName: string
+}
+
+let anchorSession: AnchorSession | undefined
 
 export class WalletPluginAnchor implements WalletPlugin {
     /**
@@ -59,7 +72,7 @@ export class WalletPluginAnchor implements WalletPlugin {
 
             // Create the identity request to be presented to the user
             createIdentityRequest(context, options)
-                .then(({callback, request}) => {
+                .then(({callback, request, requestKey, privateKey}) => {
                     // Tell Wharf we need to prompt the user with a QR code and a button
                     context.ui.prompt({
                         title: 'Login with Anchor',
@@ -80,6 +93,28 @@ export class WalletPluginAnchor implements WalletPlugin {
                     // Await a promise race to wait for either the wallet response or the cancel
                     waitForCallback(callback)
                         .then((callbackResponse) => {
+                            if (
+                                callbackResponse.link_ch &&
+                                callbackResponse.link_key &&
+                                callbackResponse.link_name
+                            ) {
+                                anchorSession = {
+                                    chain: Checksum256.from(callbackResponse.cid!),
+                                    auth: PermissionLevel.from({
+                                        actor: callbackResponse.sa,
+                                        permission: callbackResponse.sp,
+                                    }),
+                                    requestKey: PublicKey.from(requestKey),
+                                    identifier: Name.from(options.appName),
+                                    privateKey: PrivateKey.from(privateKey),
+                                    signerKey: PublicKey.from(callbackResponse.link_key!),
+                                    channelUrl: callbackResponse.link_ch,
+                                    channelName: callbackResponse.link_name,
+                                }
+                            }
+                            // Implement storage later
+                            //await this.storeSession(session)
+
                             resolve({
                                 chain: Checksum256.from(callbackResponse.cid!),
                                 permissionLevel: PermissionLevel.from({
@@ -150,9 +185,30 @@ export class WalletPluginAnchor implements WalletPlugin {
 
             const callback = setTransactionCallback(resolved)
 
-            // const {channel} = context.storage.get()
+            if (!anchorSession) {
+                return reject(new Error('No Anchor session initiated!'))
+            }
 
-            send(String(resolved), {channel: sessionChannel, service: sessionService})
+            console.log({broadcast: resolved.request.shouldBroadcast()})
+
+            const sealedMessage = sealMessage(
+                resolved.request.encode(true, false),
+                anchorSession.privateKey,
+                anchorSession.signerKey
+            )
+
+            console.log({anchorSession})
+            console.log({channel: anchorSession.channelUrl})
+
+            const service = new URL(anchorSession.channelUrl).origin
+            const channel = new URL(anchorSession.channelUrl).pathname.substring(1)
+
+            console.log({service, channel, sealedMessage})
+
+            send(Serializer.encode({object: sealedMessage}).array, {
+                service,
+                channel,
+            })
 
             waitForCallback(callback)
                 .then((callbackResponse) => {
@@ -199,6 +255,8 @@ async function waitForCallback(callbackArgs): Promise<CallbackPayload> {
     // Await a promise race to wait for either the wallet response or the cancel
     const callbackResponse = await Promise.race([walletResponse, cancel])
 
+    console.log({callbackResponse})
+
     if (!callbackResponse) {
         // If the promise was rejected, throw an error
         throw new Error(callbackResponse.rejected)
@@ -211,6 +269,8 @@ async function waitForCallback(callbackArgs): Promise<CallbackPayload> {
 
     // Process the identity request callback payload
     const payload = JSON.parse(callbackResponse) as CallbackPayload
+
+    console.log({payload})
     if (payload.sa === undefined || payload.sp === undefined || payload.cid === undefined) {
         throw new Error('Invalid response from Anchor')
     }
