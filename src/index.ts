@@ -8,7 +8,6 @@ import {
     TransactContext,
     WalletPlugin,
     WalletPluginConfig,
-    WalletPluginLoginOptions,
     WalletPluginLoginResponse,
     WalletPluginMetadata,
     WalletPluginSignResponse,
@@ -29,7 +28,7 @@ interface AnchorSession {
     privateKey: PrivateKey
     chain: Checksum256
     auth: PermissionLevel
-    identifier: Name
+    // identifier: Name
     signerKey: PublicKey
     channelUrl: string
     channelName: string
@@ -38,6 +37,20 @@ interface AnchorSession {
 let anchorSession: AnchorSession | undefined
 
 export class WalletPluginAnchor implements WalletPlugin {
+    public get id(): string {
+        return 'anchor'
+    }
+
+    public get data() {
+        return {}
+    }
+
+    public get serialize() {
+        return () =>
+            ({
+                [`${this.id}:${JSON.stringify(this.data)}`]: this.data,
+            } as Record<string, any>)
+    }
     /**
      * The logic configuration for the wallet plugin.
      */
@@ -63,18 +76,15 @@ export class WalletPluginAnchor implements WalletPlugin {
      * @param options WalletPluginLoginOptions
      * @returns Promise<WalletPluginLoginResponse>
      */
-    login(
-        context: LoginContext,
-        options: WalletPluginLoginOptions
-    ): Promise<WalletPluginLoginResponse> {
+    login(context: LoginContext): Promise<WalletPluginLoginResponse> {
         return new Promise((resolve, reject) => {
-            context.ui.status('Preparing request for Anchor...')
+            context.ui?.status('Preparing request for Anchor...')
 
             // Create the identity request to be presented to the user
-            createIdentityRequest(context, options)
+            createIdentityRequest(context)
                 .then(({callback, request, requestKey, privateKey}) => {
                     // Tell Wharf we need to prompt the user with a QR code and a button
-                    context.ui.prompt({
+                    context.ui?.prompt({
                         title: 'Login with Anchor',
                         body: 'Scan the QR-code with Anchor on another device or use the button to open it here.',
                         elements: [
@@ -105,7 +115,7 @@ export class WalletPluginAnchor implements WalletPlugin {
                                         permission: callbackResponse.sp,
                                     }),
                                     requestKey: PublicKey.from(requestKey),
-                                    identifier: Name.from(options.appName),
+                                    // identifier: context.options.name,
                                     privateKey: PrivateKey.from(privateKey),
                                     signerKey: PublicKey.from(callbackResponse.link_key!),
                                     channelUrl: callbackResponse.link_ch,
@@ -164,10 +174,10 @@ export class WalletPluginAnchor implements WalletPlugin {
         context: TransactContext
     ): Promise<WalletPluginSignResponse> {
         return new Promise((resolve, reject) => {
-            context.ui.status('Preparing request for Anchor...')
+            context.ui?.status('Preparing request for Anchor...')
 
             // Tell Wharf we need to prompt the user with a QR code and a button
-            context.ui.prompt({
+            context.ui?.prompt({
                 title: 'Sign',
                 body: 'Please open the Anchor Wallet on "DEVICE" to review and sign the transaction.',
                 elements: [

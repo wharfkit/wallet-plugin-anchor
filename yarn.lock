@@ -220,10 +220,10 @@
     eventemitter3 "^4.0.7"
     tslib "^2.1.0"
 
-"@greymass/eosio@^0.6.0", "@greymass/eosio@^0.6.8":
-  version "0.6.8"
-  resolved "https://registry.yarnpkg.com/@greymass/eosio/-/eosio-0.6.8.tgz#6f24071eaec6e0df33e3c35ca0704a53146c00d2"
-  integrity sha512-niWrUjCzQR9bJsl5IhrJIoi9fWCL4gEAOOaBdTmJuUFpOISQYe4zir5TjNlvlfpCC9ajy7o0pUNpDZuVrNaijQ==
+"@greymass/eosio@^0.6.0", "@greymass/eosio@^0.6.9":
+  version "0.6.9"
+  resolved "https://registry.yarnpkg.com/@greymass/eosio/-/eosio-0.6.9.tgz#e5475dfb6f1507da6ec2f9f0065e19684e8d4b70"
+  integrity sha512-Xd6X3sesStFQiw3+6+8tD1IauW3WX25GQnHa/zhUqIE1cB23bjzLqn89JDTcyQYKJ4R24L1rERqko/u6p7RizA==
   dependencies:
     bn.js "^4.11.9"
     brorand "^1.1.0"
@@ -579,12 +579,10 @@
     "@typescript-eslint/types" "5.50.0"
     eslint-visitor-keys "^3.3.0"
 
-"@wharfkit/session@^0.3.0-ui-6":
-  version "0.3.0-ui-9"
-  resolved "https://registry.yarnpkg.com/@wharfkit/session/-/session-0.3.0-ui-9.tgz#6ad28cbba846ce2ace1d9aa526c0c5c0323af1a7"
-  integrity sha512-Zj4Zhm3w2triU9ZaWXd9WojwkrDx0haM3n1F1iZPU/FYionyjhIQYkTxaXasyDk3+Hgi5JEcLVWdEuiEzOwQkw==
+"@wharfkit/session@../session":
+  version "0.3.0-ui-12"
   dependencies:
-    "@greymass/eosio" "^0.6.8"
+    "@greymass/eosio" "^0.6.9"
     eosio-signing-request "^2.5.2"
     pako "^2.0.4"
     tslib "^2.1.0"

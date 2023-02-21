@@ -1,18 +1,11 @@
 import {ReceiveOptions} from '@greymass/buoy'
 import {AES_CBC} from '@greymass/miniaes'
 import {Checksum256, Checksum512, PublicKey, Serializer, UInt64, Bytes} from '@greymass/eosio'
-import {
-    LoginContext,
-    PrivateKey,
-    SigningRequest,
-    WalletPluginLoginOptions,
-    ResolvedSigningRequest,
-} from '@wharfkit/session'
+import {LoginContext, PrivateKey, SigningRequest, ResolvedSigningRequest} from '@wharfkit/session'
 import zlib from 'pako'
 import {v4 as uuid} from 'uuid'
 
 import {BuoySession} from './buoy'
-import {logWarn, snakeToCamel} from './utils'
 
 import {SealedMessage} from './anchor-types'
 
@@ -20,46 +13,44 @@ import {SealedMessage} from './anchor-types'
  * createIdentityRequest
  *
  * @param context LoginContext
- * @param options WalletPluginLoginOptions
  * @returns
  */
-export async function createIdentityRequest(
-    context: LoginContext,
-    options: WalletPluginLoginOptions
-): Promise<{
+export async function createIdentityRequest(context: LoginContext): Promise<{
     callback
     request: SigningRequest
     requestKey: PublicKey
     privateKey: PrivateKey
 }> {
-    // TODO:
+    // implement when possible with "options.appName"
+    const appName = 'Anchor compatible App'
+
     // Create a new private key and public key to act as the request key
     const privateKey = PrivateKey.generate('K1')
     const requestKey = privateKey.toPublic()
 
     // Create a new BuoySession struct to be used as the info field
     const createInfo = BuoySession.from({
-        session_name: options.appName,
+        session_name: 'Anchor Session',
         request_key: requestKey,
         user_agent: getUserAgent(),
     })
 
     // Determine based on the options whether this is a multichain request
-    const isMultiChain = !(options.chain || options.chains.length === 1)
+    const isMultiChain = !(context.chain || context.chains.length === 1)
 
     // Create the request
     const request = await SigningRequest.create(
         {
             identity: {
-                permission: options.permissionLevel,
-                scope: options.appName,
+                permission: context.permissionLevel,
+                scope: String(appName),
             },
             info: {
                 link: createInfo,
-                scope: options.appName,
+                scope: String(appName),
             },
-            chainId: isMultiChain ? null : options.chain?.id,
-            chainIds: isMultiChain ? options.chains.map((c) => c.id) : undefined,
+            chainId: isMultiChain ? null : context.chain?.id,
+            chainIds: isMultiChain ? context.chains.map((c) => c.id) : undefined,
             broadcast: false,
         },
         {zlib}
