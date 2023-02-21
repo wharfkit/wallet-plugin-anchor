@@ -34,8 +34,6 @@ interface AnchorSession {
     channelName: string
 }
 
-let anchorSession: AnchorSession | undefined
-
 export class WalletPluginAnchor implements WalletPlugin {
     public get id(): string {
         return 'anchor'
@@ -108,30 +106,37 @@ export class WalletPluginAnchor implements WalletPlugin {
                                 callbackResponse.link_key &&
                                 callbackResponse.link_name
                             ) {
-                                anchorSession = {
-                                    chain: Checksum256.from(callbackResponse.cid!),
-                                    auth: PermissionLevel.from({
-                                        actor: callbackResponse.sa,
-                                        permission: callbackResponse.sp,
-                                    }),
-                                    requestKey: PublicKey.from(requestKey),
-                                    // identifier: context.options.name,
-                                    privateKey: PrivateKey.from(privateKey),
-                                    signerKey: PublicKey.from(callbackResponse.link_key!),
-                                    channelUrl: callbackResponse.link_ch,
-                                    channelName: callbackResponse.link_name,
-                                }
+                                console.log({privateKey})
+                                context.storage
+                                    ?.write(
+                                        'anchor_session',
+                                        JSON.stringify({
+                                            chain: Checksum256.from(callbackResponse.cid!),
+                                            auth: PermissionLevel.from({
+                                                actor: callbackResponse.sa,
+                                                permission: callbackResponse.sp,
+                                            }),
+                                            requestKey: PublicKey.from(requestKey),
+                                            // identifier: context.options.name,
+                                            privateKey,
+                                            signerKey: PublicKey.from(callbackResponse.link_key!),
+                                            channelUrl: callbackResponse.link_ch,
+                                            channelName: callbackResponse.link_name,
+                                        })
+                                    )
+                                    .then(() => {
+                                        resolve({
+                                            chain: Checksum256.from(callbackResponse.cid!),
+                                            permissionLevel: PermissionLevel.from({
+                                                actor: callbackResponse.sa,
+                                                permission: callbackResponse.sp,
+                                            }),
+                                        })
+                                    })
+                                    .catch((error) => {
+                                        reject(error)
+                                    })
                             }
-                            // Implement storage later
-                            //await this.storeSession(session)
-
-                            resolve({
-                                chain: Checksum256.from(callbackResponse.cid!),
-                                permissionLevel: PermissionLevel.from({
-                                    actor: callbackResponse.sa,
-                                    permission: callbackResponse.sp,
-                                }),
-                            })
                         })
                         .catch((error) => {
                             reject(error)
@@ -195,37 +200,46 @@ export class WalletPluginAnchor implements WalletPlugin {
 
             const callback = setTransactionCallback(resolved)
 
-            if (!anchorSession) {
-                return reject(new Error('No Anchor session initiated!'))
-            }
+            context.storage
+                ?.read('anchor_session')
+                .then((sessionDataString) => {
+                    if (!sessionDataString) {
+                        return reject(new Error('No Anchor session initiated!'))
+                    }
 
-            console.log({broadcast: resolved.request.shouldBroadcast()})
+                    const sessionData = JSON.parse(sessionDataString)
 
-            const sealedMessage = sealMessage(
-                resolved.request.encode(true, false),
-                anchorSession.privateKey,
-                anchorSession.signerKey
-            )
+                    console.log({broadcast: resolved.request.shouldBroadcast()})
 
-            console.log({anchorSession})
-            console.log({channel: anchorSession.channelUrl})
+                    const sealedMessage = sealMessage(
+                        resolved.request.encode(true, false),
+                        PrivateKey.from(sessionData.privateKey),
+                        PublicKey.from(sessionData.signerKey)
+                    )
 
-            const service = new URL(anchorSession.channelUrl).origin
-            const channel = new URL(anchorSession.channelUrl).pathname.substring(1)
+                    console.log({sessionData})
+                    console.log({channel: sessionData.channelUrl})
 
-            console.log({service, channel, sealedMessage})
+                    const service = new URL(sessionData.channelUrl).origin
+                    const channel = new URL(sessionData.channelUrl).pathname.substring(1)
 
-            send(Serializer.encode({object: sealedMessage}).array, {
-                service,
-                channel,
-            })
+                    console.log({service, channel, sealedMessage})
 
-            waitForCallback(callback)
-                .then((callbackResponse) => {
-                    resolve({
-                        signatures: extractSignaturesFromCallback(callbackResponse),
-                        request: resolved.request,
+                    send(Serializer.encode({object: sealedMessage}).array, {
+                        service,
+                        channel,
                     })
+
+                    waitForCallback(callback)
+                        .then((callbackResponse) => {
+                            resolve({
+                                signatures: extractSignaturesFromCallback(callbackResponse),
+                                request: resolved.request,
+                            })
+                        })
+                        .catch((error) => {
+                            reject(error)
+                        })
                 })
                 .catch((error) => {
                     reject(error)
