@@ -11,6 +11,7 @@ import {
     WalletPluginLoginResponse,
     WalletPluginMetadata,
     WalletPluginSignResponse,
+    AbstractWalletPlugin,
 } from '@wharfkit/session'
 
 import {receive, send} from '@greymass/buoy'
@@ -34,7 +35,7 @@ interface AnchorSession {
     channelName: string
 }
 
-export class WalletPluginAnchor implements WalletPlugin {
+export class WalletPluginAnchor extends AbstractWalletPlugin {
     public get id(): string {
         return 'anchor'
     }
@@ -43,12 +44,6 @@ export class WalletPluginAnchor implements WalletPlugin {
         return {}
     }
 
-    public get serialize() {
-        return () =>
-            ({
-                [`${this.id}:${JSON.stringify(this.data)}`]: this.data,
-            } as Record<string, any>)
-    }
     /**
      * The logic configuration for the wallet plugin.
      */
@@ -82,21 +77,25 @@ export class WalletPluginAnchor implements WalletPlugin {
             createIdentityRequest(context)
                 .then(({callback, request, requestKey, privateKey}) => {
                     // Tell Wharf we need to prompt the user with a QR code and a button
-                    context.ui?.prompt({
-                        title: 'Login with Anchor',
-                        body: 'Scan the QR-code with Anchor on another device or use the button to open it here.',
-                        elements: [
-                            {
-                                type: 'qr',
-                                data: String(request),
-                            },
-                            {
-                                type: 'button',
-                                label: 'Open Anchor',
-                                data: String(request),
-                            },
-                        ],
-                    })
+                    context.ui
+                        ?.prompt({
+                            title: 'Login with Anchor',
+                            body: 'Scan the QR-code with Anchor on another device or use the button to open it here.',
+                            elements: [
+                                {
+                                    type: 'qr',
+                                    data: String(request),
+                                },
+                                {
+                                    type: 'button',
+                                    label: 'Open Anchor',
+                                    data: String(request),
+                                },
+                            ],
+                        })
+                        .then((onEnd) => {
+                            onEnd()
+                        })
 
                     // Await a promise race to wait for either the wallet response or the cancel
                     waitForCallback(callback)
@@ -250,7 +249,6 @@ export class WalletPluginAnchor implements WalletPlugin {
 
 async function waitForCallback(callbackArgs): Promise<CallbackPayload> {
     // Use the buoy-client to create a promise and wait for a response to the identity request
-    console.log({callbackArgs})
     const walletResponse = receive({...callbackArgs, WebSocket})
 
     // TODO: Implement cancel logic from the UI
