@@ -126,3 +126,32 @@ export function sealMessage(
         checksum,
     })
 }
+
+export async function verifyProof(anchorResponse, context: LoginContext) {
+    let account
+    try {
+        account = await context
+            .getClient(context.chain!)
+            .v1.chain.get_account(anchorResponse.signer.actor)
+    } catch (error) {
+        throw new Error(`Failed to fetch account: ${anchorResponse.signer.actor}`)
+    }
+    if (!account) {
+        throw new Error(`Failed to fetch account: ${anchorResponse.signer.actor}`)
+    }
+
+    const proof = anchorResponse.resolved.getIdentityProof(anchorResponse.signatures[0])
+
+    const accountPermission = account.permissions.find(({perm_name}) =>
+        proof.signer.permission.equals(perm_name)
+    )
+    if (!accountPermission) {
+        throw new Error(
+            `${proof.signer.actor} signed for unknown permission: ${proof.signer.permission}`
+        )
+    }
+    const proofValid = proof.verify(accountPermission.required_auth, account.head_block_time)
+    if (!proofValid) {
+        throw new Error(`Invalid identify proof for: ${proof.signer}`)
+    }
+}

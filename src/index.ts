@@ -19,7 +19,7 @@ import {CallbackPayload} from '@wharfkit/session'
 
 import {createIdentityRequest, setTransactionCallback} from './anchor'
 
-import {sealMessage} from './anchor'
+import {sealMessage, verifyProof} from './anchor'
 
 import {extractSignaturesFromCallback} from './esr'
 
@@ -124,6 +124,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                                 callbackResponse.link_key &&
                                 callbackResponse.link_name
                             ) {
+                                verifyProof(callbackResponse, context)
                                 this.chain = Checksum256.from(callbackResponse.cid!)
                                 this.auth = PermissionLevel.from({
                                     actor: callbackResponse.sa,
@@ -142,6 +143,8 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                                         permission: callbackResponse.sp,
                                     }),
                                 })
+                            } else {
+                                reject('Invalid response from Anchor')
                             }
                         })
                         .catch((error) => {
