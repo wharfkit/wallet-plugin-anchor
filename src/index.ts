@@ -6,7 +6,6 @@ import {
     PermissionLevel,
     ResolvedSigningRequest,
     TransactContext,
-    WalletPlugin,
     WalletPluginConfig,
     WalletPluginLoginResponse,
     WalletPluginMetadata,
@@ -36,12 +35,28 @@ interface AnchorSession {
 }
 
 export class WalletPluginAnchor extends AbstractWalletPlugin {
+    chain: Checksum256 | undefined
+    auth: PermissionLevel | undefined
+    requestKey: PublicKey | undefined
+    privateKey: PrivateKey | undefined
+    signerKey: PublicKey | undefined
+    channelUrl: string | undefined
+    channelName: string | undefined
+
     public get id(): string {
         return 'anchor'
     }
 
     public get data() {
-        return {}
+        return {
+            chain: this.chain,
+            auth: this.auth,
+            requestKey: this.requestKey,
+            privateKey: this.privateKey,
+            signerKey: this.signerKey,
+            channelUrl: this.channelUrl,
+            channelName: this.channelName,
+        }
     }
 
     /**
@@ -77,24 +92,28 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             createIdentityRequest(context)
                 .then(({callback, request, requestKey, privateKey}) => {
                     // Tell Wharf we need to prompt the user with a QR code and a button
-                    context.ui
-                        ?.prompt({
-                            title: 'Login with Anchor',
-                            body: 'Scan the QR-code with Anchor on another device or use the button to open it here.',
-                            elements: [
-                                {
-                                    type: 'qr',
-                                    data: String(request),
-                                },
-                                {
-                                    type: 'button',
-                                    label: 'Open Anchor',
-                                    data: String(request),
-                                },
-                            ],
+                    const {promise} = context.ui?.prompt({
+                        title: 'Login with Anchor',
+                        body: 'Scan the QR-code with Anchor on another device or use the button to open it here.',
+                        elements: [
+                            {
+                                type: 'qr',
+                                data: String(request),
+                            },
+                            {
+                                type: 'button',
+                                label: 'Open Anchor',
+                                data: String(request),
+                            },
+                        ],
+                    })
+
+                    promise
+                        .catch((error) => {
+                            reject(error)
                         })
-                        .then((onEnd) => {
-                            onEnd()
+                        .then(() => {
+                            reject('User cancelled login')
                         })
 
                     // Await a promise race to wait for either the wallet response or the cancel
@@ -105,36 +124,24 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                                 callbackResponse.link_key &&
                                 callbackResponse.link_name
                             ) {
-                                console.log({privateKey})
-                                context.storage
-                                    ?.write(
-                                        'anchor_session',
-                                        JSON.stringify({
-                                            chain: Checksum256.from(callbackResponse.cid!),
-                                            auth: PermissionLevel.from({
-                                                actor: callbackResponse.sa,
-                                                permission: callbackResponse.sp,
-                                            }),
-                                            requestKey: PublicKey.from(requestKey),
-                                            // identifier: context.options.name,
-                                            privateKey,
-                                            signerKey: PublicKey.from(callbackResponse.link_key!),
-                                            channelUrl: callbackResponse.link_ch,
-                                            channelName: callbackResponse.link_name,
-                                        })
-                                    )
-                                    .then(() => {
-                                        resolve({
-                                            chain: Checksum256.from(callbackResponse.cid!),
-                                            permissionLevel: PermissionLevel.from({
-                                                actor: callbackResponse.sa,
-                                                permission: callbackResponse.sp,
-                                            }),
-                                        })
-                                    })
-                                    .catch((error) => {
-                                        reject(error)
-                                    })
+                                this.chain = Checksum256.from(callbackResponse.cid!)
+                                this.auth = PermissionLevel.from({
+                                    actor: callbackResponse.sa,
+                                    permission: callbackResponse.sp,
+                                })
+                                this.requestKey = PublicKey.from(requestKey)
+                                this.privateKey = privateKey
+                                this.signerKey = PublicKey.from(callbackResponse.link_key!)
+                                this.channelUrl = callbackResponse.link_ch
+                                this.channelName = callbackResponse.link_name
+
+                                resolve({
+                                    chain: Checksum256.from(callbackResponse.cid!),
+                                    permissionLevel: PermissionLevel.from({
+                                        actor: callbackResponse.sa,
+                                        permission: callbackResponse.sp,
+                                    }),
+                                })
                             }
                         })
                         .catch((error) => {
@@ -151,17 +158,6 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
 
             // TODO: Optional proof verification
             // https://github.com/greymass/anchor-link/blob/508599dd3fb3420b60ee2fa470bf60ce9ddca1c5/src/link.ts#L513-L552
-
-            // TODO: Create session metadata from the response
-            // https://github.com/greymass/anchor-link/blob/508599dd3fb3420b60ee2fa470bf60ce9ddca1c5/src/utils.ts#L46-L68
-
-            // TODO: Establish the buoy session - do we need this or is it handled by wharf itself?
-            // https://github.com/greymass/anchor-link/blob/master/src/link.ts#L582-L611
-
-            // TODO: The request_key and other metadata needs to be persisted for session restoration
-            // https://github.com/greymass/anchor-link/blob/master/src/link.ts#L612
-
-            // Return the chain and permission level to use
         })
     }
 
@@ -181,7 +177,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             context.ui?.status('Preparing request for Anchor...')
 
             // Tell Wharf we need to prompt the user with a QR code and a button
-            context.ui?.prompt({
+            const {onClose, promise} = context.ui?.prompt({
                 title: 'Sign',
                 body: 'Please open the Anchor Wallet on "DEVICE" to review and sign the transaction.',
                 elements: [
@@ -196,6 +192,14 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                     },
                 ],
             })
+
+            promise
+                .catch((error) => {
+                    reject(error)
+                })
+                .then(() => {
+                    reject('User cancelled transaction')
+                })
 
             const callback = setTransactionCallback(resolved)
 
@@ -216,13 +220,8 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                         PublicKey.from(sessionData.signerKey)
                     )
 
-                    console.log({sessionData})
-                    console.log({channel: sessionData.channelUrl})
-
                     const service = new URL(sessionData.channelUrl).origin
                     const channel = new URL(sessionData.channelUrl).pathname.substring(1)
-
-                    console.log({service, channel, sealedMessage})
 
                     send(Serializer.encode({object: sealedMessage}).array, {
                         service,
@@ -231,6 +230,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
 
                     waitForCallback(callback)
                         .then((callbackResponse) => {
+                            onClose()
                             resolve({
                                 signatures: extractSignaturesFromCallback(callbackResponse),
                                 request: resolved.request,
@@ -249,35 +249,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
 
 async function waitForCallback(callbackArgs): Promise<CallbackPayload> {
     // Use the buoy-client to create a promise and wait for a response to the identity request
-    const walletResponse = receive({...callbackArgs, WebSocket})
-
-    // TODO: Implement cancel logic from the UI
-    const cancel = new Promise<never>(() =>
-        //resolve,
-        //reject
-        {
-            // // Code from anchor-link...
-            // t.onRequest(request, (reason) => {
-            //     if (done) {
-            //         // ignore any cancel calls once callbackResponse below has resolved
-            //         return
-            //     }
-            //     const error = typeof reason === 'string' ? new CancelError(reason) : reason
-            //     if (t.recoverError && t.recoverError(error, request) === true) {
-            //         // transport was able to recover from the error
-            //         return
-            //     }
-            //     walletResponse
-            //     callback.cancel()
-            //     reject(error)
-            // })
-        }
-    )
-
-    // Await a promise race to wait for either the wallet response or the cancel
-    const callbackResponse = await Promise.race([walletResponse, cancel])
-
-    console.log({callbackResponse})
+    const callbackResponse = await receive({...callbackArgs, WebSocket})
 
     if (!callbackResponse) {
         // If the promise was rejected, throw an error
