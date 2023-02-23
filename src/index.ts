@@ -19,7 +19,7 @@ import {CallbackPayload} from '@wharfkit/session'
 
 import {createIdentityRequest, setTransactionCallback} from './anchor'
 
-import {sealMessage, verifyProof} from './anchor'
+import {sealMessage, verifyLoginProof, verifyLoginCallbackResponse} from './anchor'
 
 import {extractSignaturesFromCallback} from './esr'
 
@@ -124,7 +124,10 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                                 callbackResponse.link_key &&
                                 callbackResponse.link_name
                             ) {
-                                verifyProof(callbackResponse, context)
+                                verifyLoginCallbackResponse(callbackResponse, context)
+
+                                verifyLoginProof(callbackResponse, context)
+
                                 this.chain = Checksum256.from(callbackResponse.cid!)
                                 this.auth = PermissionLevel.from({
                                     actor: callbackResponse.sa,
@@ -158,9 +161,6 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             // TODO: Response validation
             // https://github.com/greymass/anchor-link/blob/508599dd3fb3420b60ee2fa470bf60ce9ddca1c5/src/link.ts#L379-L429
             // Note: We can skip the resolution/broadcasting, happens in session transact
-
-            // TODO: Optional proof verification
-            // https://github.com/greymass/anchor-link/blob/508599dd3fb3420b60ee2fa470bf60ce9ddca1c5/src/link.ts#L513-L552
         })
     }
 
