@@ -47,18 +47,6 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         return 'anchor'
     }
 
-    public get data() {
-        return {
-            chain: this.chain,
-            auth: this.auth,
-            requestKey: this.requestKey,
-            privateKey: this.privateKey,
-            signerKey: this.signerKey,
-            channelUrl: this.channelUrl,
-            channelName: this.channelName,
-        }
-    }
-
     /**
      * The logic configuration for the wallet plugin.
      */
@@ -128,16 +116,16 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
 
                                 verifyLoginProof(callbackResponse, context)
 
-                                this.chain = Checksum256.from(callbackResponse.cid!)
-                                this.auth = PermissionLevel.from({
+                                this.data.chain = Checksum256.from(callbackResponse.cid!)
+                                this.data.auth = PermissionLevel.from({
                                     actor: callbackResponse.sa,
                                     permission: callbackResponse.sp,
                                 })
-                                this.requestKey = PublicKey.from(requestKey)
-                                this.privateKey = privateKey
-                                this.signerKey = PublicKey.from(callbackResponse.link_key!)
-                                this.channelUrl = callbackResponse.link_ch
-                                this.channelName = callbackResponse.link_name
+                                this.data.requestKey = PublicKey.from(requestKey)
+                                this.data.privateKey = privateKey
+                                this.data.signerKey = PublicKey.from(callbackResponse.link_key!)
+                                this.data.channelUrl = callbackResponse.link_ch
+                                this.data.channelName = callbackResponse.link_name
 
                                 resolve({
                                     chain: Checksum256.from(callbackResponse.cid!),
