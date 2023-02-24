@@ -580,7 +580,7 @@
     eslint-visitor-keys "^3.3.0"
 
 "@wharfkit/session@../session":
-  version "0.3.0-ui-12"
+  version "0.3.0-ui-13"
   dependencies:
     "@greymass/eosio" "^0.6.9"
     eosio-signing-request "^2.5.2"

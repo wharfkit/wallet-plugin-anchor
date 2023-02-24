@@ -92,7 +92,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             createIdentityRequest(context)
                 .then(({callback, request, requestKey, privateKey}) => {
                     // Tell Wharf we need to prompt the user with a QR code and a button
-                    const {promise} = context.ui?.prompt({
+                    const promptResonse = context.ui?.prompt({
                         title: 'Login with Anchor',
                         body: 'Scan the QR-code with Anchor on another device or use the button to open it here.',
                         elements: [
@@ -108,7 +108,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                         ],
                     })
 
-                    promise
+                    promptResonse
                         .catch((error) => {
                             reject(error)
                         })
@@ -177,10 +177,13 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         context: TransactContext
     ): Promise<WalletPluginSignResponse> {
         return new Promise((resolve, reject) => {
-            context.ui?.status('Preparing request for Anchor...')
+            if (!context.ui) {
+                return reject(new Error('No UI available'))
+            }
+            context.ui.status('Preparing request for Anchor...')
 
             // Tell Wharf we need to prompt the user with a QR code and a button
-            const {onClose, promise} = context.ui?.prompt({
+            const promptPromise = context.ui.prompt({
                 title: 'Sign',
                 body: 'Please open the Anchor Wallet on "DEVICE" to review and sign the transaction.',
                 elements: [
@@ -196,13 +199,15 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                 ],
             })
 
-            promise
+            promptPromise
                 .catch((error) => {
                     reject(error)
                 })
                 .then(() => {
                     reject('User cancelled transaction')
                 })
+
+            const {cancel: cancelPrompt} = promptPromise
 
             const callback = setTransactionCallback(resolved)
 
@@ -233,7 +238,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
 
                     waitForCallback(callback)
                         .then((callbackResponse) => {
-                            onClose()
+                            cancelPrompt()
                             resolve({
                                 signatures: extractSignaturesFromCallback(callbackResponse),
                                 request: resolved.request,
