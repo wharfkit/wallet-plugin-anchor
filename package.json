@@ -1,7 +1,7 @@
 {
     "name": "@wharfkit/wallet-plugin-anchor",
     "description": "An Anchor plugin for use with @wharfkit/session.",
-    "version": "0.3.0-ui-14.1",
+    "version": "0.3.0-ui-14.2",
     "homepage": "https://github.com/wharfkit/wallet-plugin-anchor",
     "license": "BSD-3-Clause",
     "main": "lib/wallet-plugin-anchor.js",
@@ -20,6 +20,7 @@
         "@greymass/miniaes": "^1.0.0",
         "isomorphic-ws": "^5.0.0",
         "pako": "^2.0.4",
+        "tslib": "^2.1.0",
         "uuid": "^8.3.2"
     },
     "peerDependencies": {
