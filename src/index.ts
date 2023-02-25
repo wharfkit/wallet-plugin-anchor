@@ -1,4 +1,6 @@
-import {PrivateKey, PublicKey, Name, Serializer} from '@greymass/eosio'
+import {PrivateKey, PublicKey, Serializer} from '@greymass/eosio'
+
+import zlib from 'pako'
 
 import {
     Checksum256,
@@ -114,26 +116,34 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                             ) {
                                 verifyLoginCallbackResponse(callbackResponse, context)
 
-                                verifyLoginProof(callbackResponse, context)
+                                ResolvedSigningRequest.fromPayload(callbackResponse, {zlib})
+                                    .then((resolvedRequest) => {
+                                        verifyLoginProof(callbackResponse, resolvedRequest, context)
 
-                                this.data.chain = Checksum256.from(callbackResponse.cid!)
-                                this.data.auth = PermissionLevel.from({
-                                    actor: callbackResponse.sa,
-                                    permission: callbackResponse.sp,
-                                })
-                                this.data.requestKey = PublicKey.from(requestKey)
-                                this.data.privateKey = privateKey
-                                this.data.signerKey = PublicKey.from(callbackResponse.link_key!)
-                                this.data.channelUrl = callbackResponse.link_ch
-                                this.data.channelName = callbackResponse.link_name
+                                        this.data.chain = callbackResponse.cid
+                                        this.data.auth = {
+                                            actor: callbackResponse.sa,
+                                            permission: callbackResponse.sp,
+                                        }
+                                        this.data.requestKey = requestKey
+                                        this.data.privateKey = privateKey
+                                        this.data.signerKey =
+                                            callbackResponse.link_key &&
+                                            PublicKey.from(callbackResponse.link_key)
+                                        this.data.channelUrl = callbackResponse.link_ch
+                                        this.data.channelName = callbackResponse.link_name
 
-                                resolve({
-                                    chain: Checksum256.from(callbackResponse.cid!),
-                                    permissionLevel: PermissionLevel.from({
-                                        actor: callbackResponse.sa,
-                                        permission: callbackResponse.sp,
-                                    }),
-                                })
+                                        resolve({
+                                            chain: Checksum256.from(callbackResponse.cid!),
+                                            permissionLevel: PermissionLevel.from({
+                                                actor: callbackResponse.sa,
+                                                permission: callbackResponse.sp,
+                                            }),
+                                        })
+                                    })
+                                    .catch((error) => {
+                                        reject(error)
+                                    })
                             } else {
                                 reject('Invalid response from Anchor')
                             }
@@ -165,6 +175,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         context: TransactContext
     ): Promise<WalletPluginSignResponse> {
         return new Promise((resolve, reject) => {
+            console.log('in sign()')
             if (!context.ui) {
                 return reject(new Error('No UI available'))
             }
@@ -199,42 +210,27 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
 
             const callback = setTransactionCallback(resolved)
 
-            context.storage
-                ?.read('anchor_session')
-                .then((sessionDataString) => {
-                    if (!sessionDataString) {
-                        return reject(new Error('No Anchor session initiated!'))
-                    }
+            const sealedMessage = sealMessage(
+                resolved.request.encode(true, false),
+                this.data.privateKey,
+                this.data.signerKey
+            )
 
-                    const sessionData = JSON.parse(sessionDataString)
+            const service = new URL(this.data.channelUrl).origin
+            const channel = new URL(this.data.channelUrl).pathname.substring(1)
 
-                    console.log({broadcast: resolved.request.shouldBroadcast()})
+            send(Serializer.encode({object: sealedMessage}).array, {
+                service,
+                channel,
+            })
 
-                    const sealedMessage = sealMessage(
-                        resolved.request.encode(true, false),
-                        PrivateKey.from(sessionData.privateKey),
-                        PublicKey.from(sessionData.signerKey)
-                    )
-
-                    const service = new URL(sessionData.channelUrl).origin
-                    const channel = new URL(sessionData.channelUrl).pathname.substring(1)
-
-                    send(Serializer.encode({object: sealedMessage}).array, {
-                        service,
-                        channel,
+            waitForCallback(callback)
+                .then((callbackResponse) => {
+                    cancelPrompt()
+                    resolve({
+                        signatures: extractSignaturesFromCallback(callbackResponse),
+                        request: resolved.request,
                     })
-
-                    waitForCallback(callback)
-                        .then((callbackResponse) => {
-                            cancelPrompt()
-                            resolve({
-                                signatures: extractSignaturesFromCallback(callbackResponse),
-                                request: resolved.request,
-                            })
-                        })
-                        .catch((error) => {
-                            reject(error)
-                        })
                 })
                 .catch((error) => {
                     reject(error)
@@ -260,7 +256,6 @@ async function waitForCallback(callbackArgs): Promise<CallbackPayload> {
     // Process the identity request callback payload
     const payload = JSON.parse(callbackResponse) as CallbackPayload
 
-    console.log({payload})
     if (payload.sa === undefined || payload.sp === undefined || payload.cid === undefined) {
         throw new Error('Invalid response from Anchor')
     }
