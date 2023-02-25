@@ -579,8 +579,10 @@
     "@typescript-eslint/types" "5.50.0"
     eslint-visitor-keys "^3.3.0"
 
-"@wharfkit/session@../session":
+"@wharfkit/session@0.3.0-ui-13":
   version "0.3.0-ui-13"
+  resolved "https://registry.yarnpkg.com/@wharfkit/session/-/session-0.3.0-ui-13.tgz#42da63eaad14c5cfd56b0fe0dfa42576caecef98"
+  integrity sha512-x9lzzNeb7+EZ4Q+Cw0seJSEDJcsuDpsqFkMfQKwkpgrf4mJ9oYSUHo7lrynZgJay9Psp4d3EqGcoNGRcV2SMtg==
   dependencies:
     "@greymass/eosio" "^0.6.9"
     eosio-signing-request "^2.5.2"

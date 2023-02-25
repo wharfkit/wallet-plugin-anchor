@@ -23,7 +23,7 @@
         "uuid": "^8.3.2"
     },
     "peerDependencies": {
-        "@wharfkit/session": "../session"
+        "@wharfkit/session": "0.3.0-ui-13"
     },
     "devDependencies": {
         "@rollup/plugin-alias": "^3.1.4",
@@ -39,7 +39,7 @@
         "@types/uuid": "^8",
         "@typescript-eslint/eslint-plugin": "^5.20.0",
         "@typescript-eslint/parser": "^5.20.0",
-        "@wharfkit/session": "../session",
+        "@wharfkit/session": "0.3.0-ui-13",
         "chai": "^4.3.4",
         "eosio-signing-request": "^2.5.2",
         "eslint": "^8.13.0",

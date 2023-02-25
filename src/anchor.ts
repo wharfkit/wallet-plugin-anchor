@@ -1,22 +1,14 @@
 import {ReceiveOptions} from '@greymass/buoy'
 import {AES_CBC} from '@greymass/miniaes'
+import {Bytes, Checksum256, Checksum512, PublicKey, Serializer, UInt64} from '@greymass/eosio'
 import {
-    Checksum256,
-    Checksum512,
-    PublicKey,
-    Serializer,
-    UInt64,
-    Bytes,
-    Signature,
-} from '@greymass/eosio'
-import {
+    ChainDefinition,
     LoginContext,
     PrivateKey,
-    SigningRequest,
     ResolvedSigningRequest,
-    ChainId,
-    ChainDefinition,
+    SigningRequest,
 } from '@wharfkit/session'
+
 import zlib from 'pako'
 import {v4 as uuid} from 'uuid'
 
@@ -142,20 +134,24 @@ export function sealMessage(
     })
 }
 
-export async function verifyLoginProof(anchorResponse, context: LoginContext) {
+export async function verifyLoginProof(
+    callbackResponse,
+    resolvedRequest: ResolvedSigningRequest,
+    context: LoginContext
+) {
     let account
     try {
         account = await context
             .getClient(context.chain!)
-            .v1.chain.get_account(anchorResponse.signer.actor)
+            .v1.chain.get_account(resolvedRequest.signer.actor)
     } catch (error) {
-        throw new Error(`Failed to fetch account: ${anchorResponse.signer.actor}`)
+        throw new Error(`Failed to fetch account: ${resolvedRequest.signer.actor}`)
     }
     if (!account) {
-        throw new Error(`Failed to fetch account: ${anchorResponse.signer.actor}`)
+        throw new Error(`Failed to fetch account: ${resolvedRequest.signer.actor}`)
     }
 
-    const proof = anchorResponse.resolved.getIdentityProof(anchorResponse.signatures[0])
+    const proof = resolvedRequest.getIdentityProof(callbackResponse.sig)
 
     const accountPermission = account.permissions.find(({perm_name}) =>
         proof.signer.permission.equals(perm_name)
@@ -171,24 +167,21 @@ export async function verifyLoginProof(anchorResponse, context: LoginContext) {
     }
 }
 
-export async function verifyLoginCallbackResponse(anchorResponse, context: LoginContext) {
-    const signatures: Signature[] = getSignatures(anchorResponse)
+export async function verifyLoginCallbackResponse(callbackResponse, context: LoginContext) {
+    if (!callbackResponse.sig || callbackResponse.sig.length === 0) {
+        throw new Error('Invalid response, must have at least one signature')
+    }
+
     let chain: ChainDefinition
     if (!context.chain && context.chains.length > 1) {
-        if (!anchorResponse.cid) {
+        if (!callbackResponse.cid) {
             throw new Error('Multi chain response payload must specify resolved chain id (cid)')
         }
-        chain = ChainDefinition.from(anchorResponse.cid)
     } else {
         chain = context.chain || context.chains[0]
-        if (anchorResponse.cid && !chain.equals(anchorResponse.cid)) {
+
+        if (callbackResponse.cid && String(chain.id) !== callbackResponse.cid) {
             throw new Error('Got response for wrong chain id')
         }
     }
-}
-
-function getSignatures(anchorResponse): Signature[] {
-    return Object.keys(anchorResponse)
-        .filter((key) => key.startsWith('sig') && key !== 'sig0')
-        .map((key) => Signature.from(anchorResponse[key]!) as Signature)
 }
