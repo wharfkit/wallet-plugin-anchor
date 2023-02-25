@@ -1,7 +1,7 @@
 {
     "name": "@wharfkit/wallet-plugin-anchor",
     "description": "An Anchor plugin for use with @wharfkit/session.",
-    "version": "0.3.0-ui-14.3",
+    "version": "0.3.0-ui-14.4",
     "homepage": "https://github.com/wharfkit/wallet-plugin-anchor",
     "license": "BSD-3-Clause",
     "main": "lib/wallet-plugin-anchor.js",
@@ -19,12 +19,12 @@
         "@greymass/buoy": "^1.0.3",
         "@greymass/miniaes": "^1.0.0",
         "isomorphic-ws": "^5.0.0",
-        "pako": "^2.0.4",
         "tslib": "^2.1.0",
-        "uuid": "^8.3.2"
+        "uuid": "^9.0.0"
     },
     "peerDependencies": {
-        "@wharfkit/session": "0.3.0-ui-13"
+        "@wharfkit/session": "0.3.0-ui-13",
+        "pako": "^2.0.4"
     },
     "devDependencies": {
         "@rollup/plugin-alias": "^3.1.4",
@@ -37,7 +37,6 @@
         "@types/chai": "^4.3.1",
         "@types/mocha": "^9.0.0",
         "@types/node": "^18.7.18",
-        "@types/uuid": "^8",
         "@typescript-eslint/eslint-plugin": "^5.20.0",
         "@typescript-eslint/parser": "^5.20.0",
         "@wharfkit/session": "0.3.0-ui-13",
