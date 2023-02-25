@@ -1,5 +1,4 @@
-import {CallbackPayload} from 'eosio-signing-request'
-import {Signature} from '@greymass/eosio'
+import {CallbackPayload, Signature} from '@wharfkit/session'
 
 export function extractSignaturesFromCallback(payload: CallbackPayload): Signature[] {
     const signatures: Signature[] = []

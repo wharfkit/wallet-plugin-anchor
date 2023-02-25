@@ -1,12 +1,17 @@
 import {ReceiveOptions} from '@greymass/buoy'
 import {AES_CBC} from '@greymass/miniaes'
-import {Bytes, Checksum256, Checksum512, PublicKey, Serializer, UInt64} from '@greymass/eosio'
 import {
+    Bytes,
     ChainDefinition,
+    Checksum256,
+    Checksum512,
     LoginContext,
     PrivateKey,
+    PublicKey,
     ResolvedSigningRequest,
+    Serializer,
     SigningRequest,
+    UInt64,
 } from '@wharfkit/session'
 
 import zlib from 'pako'

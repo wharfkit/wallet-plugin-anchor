@@ -1,13 +1,14 @@
-import {PrivateKey, PublicKey, Serializer} from '@greymass/eosio'
-
-import zlib from 'pako'
-
+import {receive, send} from '@greymass/buoy'
 import {
     AbstractWalletPlugin,
+    CallbackPayload,
     Checksum256,
     LoginContext,
     PermissionLevel,
+    PrivateKey,
+    PublicKey,
     ResolvedSigningRequest,
+    Serializer,
     TransactContext,
     WalletPluginConfig,
     WalletPluginLoginResponse,
@@ -15,13 +16,16 @@ import {
     WalletPluginSignResponse,
 } from '@wharfkit/session'
 
-import {receive, send} from '@greymass/buoy'
+import zlib from 'pako'
 import WebSocket from 'isomorphic-ws'
-import {CallbackPayload} from '@wharfkit/session'
 
-import {createIdentityRequest, setTransactionCallback} from './anchor'
-
-import {sealMessage, verifyLoginCallbackResponse, verifyLoginProof} from './anchor'
+import {
+    createIdentityRequest,
+    sealMessage,
+    setTransactionCallback,
+    verifyLoginCallbackResponse,
+    verifyLoginProof,
+} from './anchor'
 
 import {extractSignaturesFromCallback} from './esr'
 
