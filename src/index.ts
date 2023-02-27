@@ -2,6 +2,7 @@ import {receive, send} from '@greymass/buoy'
 import {
     AbstractWalletPlugin,
     CallbackPayload,
+    Canceled,
     Checksum256,
     LoginContext,
     PermissionLevel,
@@ -14,7 +15,6 @@ import {
     WalletPluginLoginResponse,
     WalletPluginMetadata,
     WalletPluginSignResponse,
-    Canceled,
 } from '@wharfkit/session'
 
 import zlib from 'pako'
@@ -173,8 +173,6 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             }
             context.ui.status('Preparing request for Anchor...')
 
-            console.log({chainId: resolved.chainId, chain: this.data.chain})
-
             // Tell Wharf we need to prompt the user with a QR code and a button
             const promptPromise = context.ui.prompt({
                 title: 'Sign',
@@ -202,8 +200,6 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             const {cancel: cancelPrompt} = promptPromise
 
             const callback = setTransactionCallback(resolved)
-
-            console.log({pk: this.data.privateKey, sk: this.data.signerKey})
 
             const sealedMessage = sealMessage(
                 resolved.request.encode(true, false),
