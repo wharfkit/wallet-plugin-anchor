@@ -490,11 +490,6 @@
   resolved "https://registry.yarnpkg.com/@types/semver/-/semver-7.3.13.tgz#da4bfd73f49bd541d28920ab0e2bf0ee80f71c91"
   integrity sha512-21cFJr9z3g5dW8B0CVI9g2O9beqaThGQ6ZFBqHfwhzLDKUxaqTIy3vnfah/UPkfOiF2pLq+tGz+W8RyCskuslw==
 
-"@types/uuid@^8":
-  version "8.3.4"
-  resolved "https://registry.yarnpkg.com/@types/uuid/-/uuid-8.3.4.tgz#bd86a43617df0594787d38b735f55c805becf1bc"
-  integrity sha512-c/I8ZRb51j+pYGAu5CrFMRxqZ2ke4y2grEBO5AUjgSkSk+qT2Ea+OdWElz/OiMf5MNpn2b17kuVBwZLQJXzihw==
-
 "@typescript-eslint/eslint-plugin@^5.20.0":
   version "5.50.0"
   resolved "https://registry.yarnpkg.com/@typescript-eslint/eslint-plugin/-/eslint-plugin-5.50.0.tgz#fb48c31cadc853ffc1dc35373f56b5e2a8908fe9"
@@ -579,10 +574,10 @@
     "@typescript-eslint/types" "5.50.0"
     eslint-visitor-keys "^3.3.0"
 
-"@wharfkit/session@0.3.0-ui-13":
-  version "0.3.0-ui-13"
-  resolved "https://registry.yarnpkg.com/@wharfkit/session/-/session-0.3.0-ui-13.tgz#42da63eaad14c5cfd56b0fe0dfa42576caecef98"
-  integrity sha512-x9lzzNeb7+EZ4Q+Cw0seJSEDJcsuDpsqFkMfQKwkpgrf4mJ9oYSUHo7lrynZgJay9Psp4d3EqGcoNGRcV2SMtg==
+"@wharfkit/session@0.3.0-ui-15":
+  version "0.3.0-ui-15"
+  resolved "https://registry.yarnpkg.com/@wharfkit/session/-/session-0.3.0-ui-15.tgz#b346b3644630ce95fe767551478cf21450e86b63"
+  integrity sha512-ZKEN5I9cvvvpBjLeb1LfBi4Jv4YY+xErAGN2rvUBe9PAxSzvVWwlF7yi/ALJIgI8SkplxcuZ27Ew08yenC1x7g==
   dependencies:
     "@greymass/eosio" "^0.6.9"
     eosio-signing-request "^2.5.2"
@@ -2663,6 +2658,11 @@ uuid@^8.3.2:
   version "8.3.2"
   resolved "https://registry.yarnpkg.com/uuid/-/uuid-8.3.2.tgz#80d5b5ced271bb9af6c445f21a1a04c606cefbe2"
   integrity sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==
+
+uuid@^9.0.0:
+  version "9.0.0"
+  resolved "https://registry.yarnpkg.com/uuid/-/uuid-9.0.0.tgz#592f550650024a38ceb0c562f2f6aa435761efb5"
+  integrity sha512-MXcSTerfPa4uqyzStbRoTgt5XIe3x5+42+q1sDuy3R5MDk66URdLMOZe5aPX/SQd+kuYAh0FdP/pO28IkQyTeg==
 
 v8-compile-cache-lib@^3.0.1:
   version "3.0.1"

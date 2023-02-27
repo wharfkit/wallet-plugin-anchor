@@ -20,11 +20,11 @@
         "@greymass/miniaes": "^1.0.0",
         "isomorphic-ws": "^5.0.0",
         "tslib": "^2.1.0",
-        "uuid": "^9.0.0"
+        "uuid": "^9.0.0",
+        "pako": "^2.0.4"
     },
     "peerDependencies": {
-        "@wharfkit/session": "0.3.0-ui-13",
-        "pako": "^2.0.4"
+        "@wharfkit/session": "0.3.0-ui-15"
     },
     "devDependencies": {
         "@rollup/plugin-alias": "^3.1.4",
@@ -39,7 +39,7 @@
         "@types/node": "^18.7.18",
         "@typescript-eslint/eslint-plugin": "^5.20.0",
         "@typescript-eslint/parser": "^5.20.0",
-        "@wharfkit/session": "0.3.0-ui-13",
+        "@wharfkit/session": "0.3.0-ui-15",
         "chai": "^4.3.4",
         "eosio-signing-request": "^2.5.2",
         "eslint": "^8.13.0",

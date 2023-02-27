@@ -14,6 +14,7 @@ import {
     WalletPluginLoginResponse,
     WalletPluginMetadata,
     WalletPluginSignResponse,
+    Canceled,
 } from '@wharfkit/session'
 
 import zlib from 'pako'
@@ -84,20 +85,19 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                                 data: String(request),
                             },
                             {
-                                type: 'button',
+                                type: 'link',
                                 label: 'Open Anchor',
                                 data: String(request),
                             },
                         ],
                     })
 
-                    promptResonse
-                        .catch((error) => {
+                    promptResonse.catch((error) => {
+                        // Throw if what we caught was a cancelation
+                        if (error instanceof Canceled) {
                             reject(error)
-                        })
-                        .then(() => {
-                            reject('User cancelled login')
-                        })
+                        }
+                    })
 
                     // Await a promise race to wait for either the wallet response or the cancel
                     waitForCallback(callback)
@@ -173,6 +173,8 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             }
             context.ui.status('Preparing request for Anchor...')
 
+            console.log({chainId: resolved.chainId, chain: this.data.chain})
+
             // Tell Wharf we need to prompt the user with a QR code and a button
             const promptPromise = context.ui.prompt({
                 title: 'Sign',
@@ -183,24 +185,25 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                         data: resolved.transaction.expiration.toDate().toISOString(),
                     },
                     {
-                        type: 'button',
+                        type: 'link',
                         label: 'Sign manually or with another device',
                         data: String(resolved).replace('esr:', 'esr-anchor:'),
                     },
                 ],
             })
 
-            promptPromise
-                .catch((error) => {
+            promptPromise.catch((error) => {
+                // Throw if what we caught was a cancelation
+                if (error instanceof Canceled) {
                     reject(error)
-                })
-                .then(() => {
-                    reject('User cancelled transaction')
-                })
+                }
+            })
 
             const {cancel: cancelPrompt} = promptPromise
 
             const callback = setTransactionCallback(resolved)
+
+            console.log({pk: this.data.privateKey, sk: this.data.signerKey})
 
             const sealedMessage = sealMessage(
                 resolved.request.encode(true, false),
