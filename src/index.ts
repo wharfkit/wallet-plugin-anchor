@@ -185,7 +185,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                     {
                         type: 'button',
                         label: 'Sign manually or with another device',
-                        data: String(resolved),
+                        data: String(resolved).replace('esr:', 'esr-anchor:'),
                     },
                 ],
             })
