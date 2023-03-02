@@ -15,7 +15,7 @@ const mockSessionKitOptions = {
     appName: 'unittests',
     chains: [mockChainDefinition],
     fetch: mockFetch, // Required for unit tests
-    walletPlugins: [new WalletPluginAnchor()],
+    walletPlugins: [new WalletPluginAnchor({buoyUrl: 'https://cb.anchor.link'})],
 }
 
 suite('wallet plugin', function () {

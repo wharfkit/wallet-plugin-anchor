@@ -92,7 +92,10 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                             {
                                 type: 'link',
                                 label: 'Open Anchor',
-                                data: String(request),
+                                data: {
+                                    href: String(request).replace('esr:', 'esr-anchor:'),
+                                    label: 'Open Anchor',
+                                },
                             },
                         ],
                     })
@@ -114,34 +117,26 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                             ) {
                                 verifyLoginCallbackResponse(callbackResponse, context)
 
-                                ResolvedSigningRequest.fromPayload(callbackResponse, {
-                                    zlib: context.esrOptions.zlib,
-                                })
-                                    .then((resolvedRequest) => {
-                                        this.data.chain = callbackResponse.cid
-                                        this.data.auth = {
-                                            actor: callbackResponse.sa,
-                                            permission: callbackResponse.sp,
-                                        }
-                                        this.data.requestKey = requestKey
-                                        this.data.privateKey = privateKey
-                                        this.data.signerKey =
-                                            callbackResponse.link_key &&
-                                            PublicKey.from(callbackResponse.link_key)
-                                        this.data.channelUrl = callbackResponse.link_ch
-                                        this.data.channelName = callbackResponse.link_name
+                                this.data.chain = callbackResponse.cid
+                                this.data.auth = {
+                                    actor: callbackResponse.sa,
+                                    permission: callbackResponse.sp,
+                                }
+                                this.data.requestKey = requestKey
+                                this.data.privateKey = privateKey
+                                this.data.signerKey =
+                                    callbackResponse.link_key &&
+                                    PublicKey.from(callbackResponse.link_key)
+                                this.data.channelUrl = callbackResponse.link_ch
+                                this.data.channelName = callbackResponse.link_name
 
-                                        resolve({
-                                            chain: Checksum256.from(callbackResponse.cid!),
-                                            permissionLevel: PermissionLevel.from({
-                                                actor: callbackResponse.sa,
-                                                permission: callbackResponse.sp,
-                                            }),
-                                        })
-                                    })
-                                    .catch((error) => {
-                                        reject(error)
-                                    })
+                                resolve({
+                                    chain: Checksum256.from(callbackResponse.cid!),
+                                    permissionLevel: PermissionLevel.from({
+                                        actor: callbackResponse.sa,
+                                        permission: callbackResponse.sp,
+                                    }),
+                                })
                             } else {
                                 reject('Invalid response from Anchor')
                             }
@@ -178,8 +173,6 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             }
             context.ui.status('Preparing request for Anchor...')
 
-            console.log({chainId: resolved.chainId, chain: this.data.chain})
-
             // Tell Wharf we need to prompt the user with a QR code and a button
             const promptPromise = context.ui.prompt({
                 title: 'Sign',
@@ -192,7 +185,10 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                     {
                         type: 'link',
                         label: 'Sign manually or with another device',
-                        data: String(resolved).replace('esr:', 'esr-anchor:'),
+                        data: {
+                            href: String(resolved).replace('esr:', 'esr-anchor:'),
+                            label: 'Trigger Manually',
+                        },
                     },
                 ],
             })
@@ -207,8 +203,6 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             const {cancel: cancelPrompt} = promptPromise
 
             const callback = setTransactionCallback(resolved, this.buoyUrl)
-
-            console.log({pk: this.data.privateKey, sk: this.data.signerKey})
 
             const sealedMessage = sealMessage(
                 resolved.request.encode(true, false),
