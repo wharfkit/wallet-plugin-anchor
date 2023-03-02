@@ -14,8 +14,7 @@ import {
     UInt64,
 } from '@wharfkit/session'
 
-import zlib from 'pako'
-import {v4 as uuid} from 'uuid'
+import {uuid} from './utils'
 
 import {BuoySession} from './buoy'
 
@@ -27,7 +26,10 @@ import {SealedMessage} from './anchor-types'
  * @param context LoginContext
  * @returns
  */
-export async function createIdentityRequest(context: LoginContext): Promise<{
+export async function createIdentityRequest(
+    context: LoginContext,
+    buoyUrl: string
+): Promise<{
     callback
     request: SigningRequest
     requestKey: PublicKey
@@ -65,11 +67,11 @@ export async function createIdentityRequest(context: LoginContext): Promise<{
             chainIds: isMultiChain ? context.chains.map((c) => c.id) : undefined,
             broadcast: false,
         },
-        {zlib}
+        {zlib: context.esrOptions.zlib}
     )
 
     // The buoy callback data for this request
-    const callback = prepareCallbackChannel()
+    const callback = prepareCallbackChannel(buoyUrl)
 
     // Specify the callback URL on the request itself so the wallet can respond to it
     request.setCallback(`${callback.service}/${callback.channel}`, true)
@@ -90,8 +92,8 @@ export async function createIdentityRequest(context: LoginContext): Promise<{
  * @returns
  */
 
-export function setTransactionCallback(resolved: ResolvedSigningRequest) {
-    const callback = prepareCallbackChannel()
+export function setTransactionCallback(resolved: ResolvedSigningRequest, buoyUrl) {
+    const callback = prepareCallbackChannel(buoyUrl)
 
     resolved.request.setCallback(`${callback.service}/${callback.channel}`, true)
 
@@ -108,10 +110,10 @@ export function getUserAgent(): string {
     return agent
 }
 
-function prepareCallbackChannel(): ReceiveOptions {
+function prepareCallbackChannel(buoyUrl): ReceiveOptions {
     // The buoy callback data for this request
     return {
-        service: `https://cb.anchor.link`,
+        service: buoyUrl,
         channel: uuid(),
     }
 }

@@ -18,13 +18,10 @@
     "dependencies": {
         "@greymass/buoy": "^1.0.3",
         "@greymass/miniaes": "^1.0.0",
-        "isomorphic-ws": "^5.0.0",
-        "tslib": "^2.1.0",
-        "uuid": "^9.0.0",
-        "pako": "^2.0.4"
+        "isomorphic-ws": "^5.0.0"
     },
     "peerDependencies": {
-        "@wharfkit/session": "0.3.0-ui-15"
+        "@wharfkit/session": "0.3.0-ui-16"
     },
     "devDependencies": {
         "@rollup/plugin-alias": "^3.1.4",
@@ -39,7 +36,7 @@
         "@types/node": "^18.7.18",
         "@typescript-eslint/eslint-plugin": "^5.20.0",
         "@typescript-eslint/parser": "^5.20.0",
-        "@wharfkit/session": "0.3.0-ui-15",
+        "@wharfkit/session": "0.3.0-ui-16",
         "chai": "^4.3.4",
         "eosio-signing-request": "^2.5.2",
         "eslint": "^8.13.0",
@@ -55,6 +52,7 @@
         "rollup-plugin-terser": "^7.0.2",
         "ts-node": "^10.9.1",
         "tsconfig-paths": "^4.1.1",
+        "tslib": "^2.1.0",
         "typedoc": "^0.23.14",
         "typescript": "^4.1.2",
         "ws": "^8.12.0"

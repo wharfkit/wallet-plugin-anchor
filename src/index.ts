@@ -17,7 +17,6 @@ import {
     WalletPluginSignResponse,
 } from '@wharfkit/session'
 
-import zlib from 'pako'
 import WebSocket from 'isomorphic-ws'
 
 import {
@@ -38,6 +37,13 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
     signerKey: PublicKey | undefined
     channelUrl: string | undefined
     channelName: string | undefined
+    buoyUrl: string
+
+    constructor(options: {buoyUrl: string}) {
+        super()
+
+        this.buoyUrl = options.buoyUrl || 'https://cb.anchor.link'
+    }
 
     public get id(): string {
         return 'anchor'
@@ -73,7 +79,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             context.ui?.status('Preparing request for Anchor...')
 
             // Create the identity request to be presented to the user
-            createIdentityRequest(context)
+            createIdentityRequest(context, this.buoyUrl)
                 .then(({callback, request, requestKey, privateKey}) => {
                     // Tell Wharf we need to prompt the user with a QR code and a button
                     const promptResonse = context.ui?.prompt({
@@ -109,7 +115,9 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                             ) {
                                 verifyLoginCallbackResponse(callbackResponse, context)
 
-                                ResolvedSigningRequest.fromPayload(callbackResponse, {zlib})
+                                ResolvedSigningRequest.fromPayload(callbackResponse, {
+                                    zlib: context.esrOptions.zlib,
+                                })
                                     .then((resolvedRequest) => {
                                         verifyLoginProof(callbackResponse, resolvedRequest, context)
 
@@ -173,6 +181,8 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             }
             context.ui.status('Preparing request for Anchor...')
 
+            console.log({chainId: resolved.chainId, chain: this.data.chain})
+
             // Tell Wharf we need to prompt the user with a QR code and a button
             const promptPromise = context.ui.prompt({
                 title: 'Sign',
@@ -199,7 +209,9 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
 
             const {cancel: cancelPrompt} = promptPromise
 
-            const callback = setTransactionCallback(resolved)
+            const callback = setTransactionCallback(resolved, this.buoyUrl)
+
+            console.log({pk: this.data.privateKey, sk: this.data.signerKey})
 
             const sealedMessage = sealMessage(
                 resolved.request.encode(true, false),
