@@ -35,9 +35,6 @@ export async function createIdentityRequest(
     requestKey: PublicKey
     privateKey: PrivateKey
 }> {
-    // implement when possible with "options.appName"
-    const appName = 'Anchor compatible App'
-
     // Create a new private key and public key to act as the request key
     const privateKey = PrivateKey.generate('K1')
     const requestKey = privateKey.toPublic()
@@ -57,11 +54,11 @@ export async function createIdentityRequest(
         {
             identity: {
                 permission: context.permissionLevel,
-                scope: String(appName),
+                scope: String(context.appName),
             },
             info: {
                 link: createInfo,
-                scope: String(appName),
+                scope: String(context.appName),
             },
             chainId: isMultiChain ? null : context.chain?.id,
             chainIds: isMultiChain ? context.chains.map((c) => c.id) : undefined,
@@ -139,39 +136,6 @@ export function sealMessage(
         ciphertext,
         checksum,
     })
-}
-
-export async function verifyLoginProof(
-    callbackResponse,
-    resolvedRequest: ResolvedSigningRequest,
-    context: LoginContext
-) {
-    let account
-    try {
-        account = await context
-            .getClient(context.chain!)
-            .v1.chain.get_account(resolvedRequest.signer.actor)
-    } catch (error) {
-        throw new Error(`Failed to fetch account: ${resolvedRequest.signer.actor}`)
-    }
-    if (!account) {
-        throw new Error(`Failed to fetch account: ${resolvedRequest.signer.actor}`)
-    }
-
-    const proof = resolvedRequest.getIdentityProof(callbackResponse.sig)
-
-    const accountPermission = account.permissions.find(({perm_name}) =>
-        proof.signer.permission.equals(perm_name)
-    )
-    if (!accountPermission) {
-        throw new Error(
-            `${proof.signer.actor} signed for unknown permission: ${proof.signer.permission}`
-        )
-    }
-    const proofValid = proof.verify(accountPermission.required_auth, account.head_block_time)
-    if (!proofValid) {
-        throw new Error(`Invalid identify proof for: ${proof.signer}`)
-    }
 }
 
 export async function verifyLoginCallbackResponse(callbackResponse, context: LoginContext) {

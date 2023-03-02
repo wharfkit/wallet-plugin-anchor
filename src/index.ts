@@ -24,7 +24,6 @@ import {
     sealMessage,
     setTransactionCallback,
     verifyLoginCallbackResponse,
-    verifyLoginProof,
 } from './anchor'
 
 import {extractSignaturesFromCallback} from './esr'
@@ -119,8 +118,6 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                                     zlib: context.esrOptions.zlib,
                                 })
                                     .then((resolvedRequest) => {
-                                        verifyLoginProof(callbackResponse, resolvedRequest, context)
-
                                         this.data.chain = callbackResponse.cid
                                         this.data.auth = {
                                             actor: callbackResponse.sa,
@@ -215,8 +212,8 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
 
             const sealedMessage = sealMessage(
                 resolved.request.encode(true, false),
-                this.data.privateKey,
-                this.data.signerKey
+                PrivateKey.from(this.data.privateKey),
+                PublicKey.from(this.data.signerKey)
             )
 
             const service = new URL(this.data.channelUrl).origin
