@@ -4,12 +4,18 @@ import {PermissionLevel, SessionKit} from '@wharfkit/session'
 import {WalletPluginAnchor} from '$lib'
 import {mockFetch} from '$test/utils/mock-fetch'
 
+import {makeWallet} from '$test/utils/mock-wallet'
+import {MockStorage} from '$test/utils/mock-storage'
+import {MockUserInterface} from '$test/utils/mock-userinterface'
+
 const mockChainDefinition = {
     id: '73e4385a2708e6d7048834fbc1079f2fabb17b3c125b146af438971e90716c4d',
     url: 'https://jungle4.greymass.com',
 }
 
 const mockPermissionLevel = PermissionLevel.from('wharfkit1115@test')
+
+const wallet = makeWallet()
 
 const mockSessionKitOptions = {
     appName: 'unittests',

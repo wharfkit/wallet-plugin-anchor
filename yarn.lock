@@ -584,6 +584,13 @@
     pako "^2.0.4"
     tslib "^2.1.0"
 
+"@wharfkit/wallet-plugin-privatekey@^0.3.0":
+  version "0.3.0"
+  resolved "https://registry.yarnpkg.com/@wharfkit/wallet-plugin-privatekey/-/wallet-plugin-privatekey-0.3.0.tgz#a54b03c9b71cbdb132a33eceaf6afec5066be101"
+  integrity sha512-ysEqenJ5CrL4Aja0qVtr3ya4Ah2ADuA4e+16mPMtBGcdDpmFkK/rF8006icLuHNQRXYh5QQTRiVrkQN04V+mZQ==
+  dependencies:
+    tslib "^2.1.0"
+
 acorn-jsx@^5.3.2:
   version "5.3.2"
   resolved "https://registry.yarnpkg.com/acorn-jsx/-/acorn-jsx-5.3.2.tgz#7ed5bb55908b3b2f1bc55c6af1653bada7f07937"
@@ -2121,7 +2128,7 @@ package-hash@^4.0.0:
     lodash.flattendeep "^4.4.0"
     release-zalgo "^1.0.0"
 
-pako@^2.0.4:
+pako@^2.0.4, pako@^2.1.0:
   version "2.1.0"
   resolved "https://registry.yarnpkg.com/pako/-/pako-2.1.0.tgz#266cc37f98c7d883545d11335c00fbd4062c9a86"
   integrity sha512-w+eufiZ1WuJYgPXbV/PO3NCMEc3xqylkKHzp8bxp1uW4qaSNQUkwmLLEc3kKsfz8lpV1F8Ht3U1Cm+9Srog2ug==

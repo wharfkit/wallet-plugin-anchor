@@ -16,7 +16,7 @@ import {
 
 import {uuid} from './utils'
 
-import {BuoySession} from './buoy'
+import {BuoySession} from './buoy-types'
 
 import {SealedMessage} from './anchor-types'
 

@@ -5,7 +5,7 @@
 export function snakeToPascal(name: string): string {
     return name
         .split('_')
-        .map((v) => (v[0] ? v[0].toUpperCase() : '_') + v.slice(1))
+        .map((v) => (v[0] ? v[0].toUpperCase() : '') + v.slice(1))
         .join('')
 }
 
@@ -15,7 +15,8 @@ export function snakeToPascal(name: string): string {
  */
 export function snakeToCamel(name: string): string {
     const pascal = snakeToPascal(name)
-    return pascal[0].toLowerCase() + pascal.slice(1)
+
+    return (pascal[0] ? pascal[0].toLowerCase() : '') + pascal.slice(1)
 }
 
 /**
