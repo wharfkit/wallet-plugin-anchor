@@ -20,6 +20,13 @@ import {BuoySession} from './buoy-types'
 
 import {SealedMessage} from './anchor-types'
 
+interface IdentityRequestResponse {
+    callback
+    request: SigningRequest
+    requestKey: PublicKey
+    privateKey: PrivateKey
+}
+
 /**
  * createIdentityRequest
  *
@@ -29,12 +36,7 @@ import {SealedMessage} from './anchor-types'
 export async function createIdentityRequest(
     context: LoginContext,
     buoyUrl: string
-): Promise<{
-    callback
-    request: SigningRequest
-    requestKey: PublicKey
-    privateKey: PrivateKey
-}> {
+): Promise<IdentityRequestResponse> {
     // Create a new private key and public key to act as the request key
     const privateKey = PrivateKey.generate('K1')
     const requestKey = privateKey.toPublic()
