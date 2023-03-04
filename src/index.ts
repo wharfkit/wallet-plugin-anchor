@@ -96,7 +96,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                                 type: 'link',
                                 label: 'Open Anchor',
                                 data: {
-                                    href: String(request).replace('esr:', 'esr-anchor:'),
+                                    href: String(request),
                                     label: 'Open Anchor',
                                 },
                             },
@@ -192,7 +192,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                         type: 'link',
                         label: 'Sign manually or with another device',
                         data: {
-                            href: String(resolved).replace('esr:', 'esr-anchor:'),
+                            href: String(resolved),
                             label: 'Trigger Manually',
                         },
                     },
