@@ -223,11 +223,20 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
 
             waitForCallback(callback)
                 .then((callbackResponse) => {
-                    cancelPrompt()
-                    resolve({
-                        signatures: extractSignaturesFromCallback(callbackResponse),
-                        request: resolved.request,
+                    ResolvedSigningRequest.fromPayload(callbackResponse, {
+                        zlib: context.esrOptions.zlib,
+                        abiProvider: context.abiProvider,
                     })
+                        .then((resolvedRequest) => {
+                            cancelPrompt()
+                            resolve({
+                                signatures: extractSignaturesFromCallback(callbackResponse),
+                                request: resolvedRequest.request,
+                            })
+                        })
+                        .catch((error) => {
+                            reject(error)
+                        })
                 })
                 .catch((error) => {
                     reject(error)
