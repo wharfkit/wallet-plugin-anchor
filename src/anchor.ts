@@ -2,7 +2,6 @@ import {ReceiveOptions} from '@greymass/buoy'
 import {AES_CBC} from '@greymass/miniaes'
 import {
     Bytes,
-    CallbackType,
     ChainDefinition,
     Checksum256,
     Checksum512,
@@ -107,14 +106,6 @@ export function getUserAgent(): string {
         agent += ' ' + navigator.userAgent
     }
     return agent
-}
-
-function prepareCallback(buoyUrl): CallbackType {
-    const {service, channel} = prepareCallbackChannel(buoyUrl)
-    return {
-        url: `${service}/${channel}`,
-        background: false,
-    }
 }
 
 function prepareCallbackChannel(buoyUrl): ReceiveOptions {
