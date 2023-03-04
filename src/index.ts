@@ -28,6 +28,9 @@ import {
 
 import {extractSignaturesFromCallback} from './esr'
 
+interface WalletPluginOptions {
+    buoyUrl?: string
+}
 export class WalletPluginAnchor extends AbstractWalletPlugin {
     chain: Checksum256 | undefined
     auth: PermissionLevel | undefined
@@ -38,10 +41,10 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
     channelName: string | undefined
     buoyUrl: string
 
-    constructor(options: {buoyUrl: string}) {
+    constructor(options?: WalletPluginOptions) {
         super()
 
-        this.buoyUrl = options.buoyUrl || 'https://cb.anchor.link'
+        this.buoyUrl = options?.buoyUrl || 'https://cb.anchor.link'
     }
 
     public get id(): string {
