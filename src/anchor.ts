@@ -53,12 +53,21 @@ export async function createIdentityRequest(
     const isMultiChain = !(context.chain || context.chains.length === 1)
 
     // Create the request
-    const request = SigningRequest.identity(
+    const request = await SigningRequest.create(
         {
-            callback: prepareCallback(buoyUrl),
-            scope: String(context.appName),
+            identity: {
+                permission: context.permissionLevel,
+                scope: String(context.appName),
+            },
+            info: {
+                link: createInfo,
+                scope: String(context.appName),
+            },
+            chainId: isMultiChain ? null : context.chain?.id,
+            chainIds: isMultiChain ? context.chains.map((c) => c.id) : undefined,
+            broadcast: false,
         },
-        {zlib: context.esrOptions?.zlib}
+        {zlib: context.esrOptions.zlib}
     )
 
     // The buoy callback data for this request
