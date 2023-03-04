@@ -112,7 +112,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
 
                     // Await a promise race to wait for either the wallet response or the cancel
                     waitForCallback(callback)
-                        .then((callbackResponse) => {
+                        .then((callbackResponse: CallbackPayload) => {
                             if (
                                 callbackResponse.link_ch &&
                                 callbackResponse.link_key &&
@@ -182,7 +182,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             // Tell Wharf we need to prompt the user with a QR code and a button
             const promptPromise = context.ui.prompt({
                 title: 'Sign',
-                body: 'Please open the Anchor Wallet on "DEVICE" to review and sign the transaction.',
+                body: `Please open the Anchor Wallet on "${this.data.channelName}" to review and sign the transaction.`,
                 elements: [
                     {
                         type: 'countdown',
