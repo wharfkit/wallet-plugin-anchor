@@ -2,6 +2,7 @@ import {ReceiveOptions} from '@greymass/buoy'
 import {AES_CBC} from '@greymass/miniaes'
 import {
     Bytes,
+    CallbackType,
     ChainDefinition,
     Checksum256,
     Checksum512,
@@ -52,22 +53,28 @@ export async function createIdentityRequest(
     const isMultiChain = !(context.chain || context.chains.length === 1)
 
     // Create the request
-    const request = await SigningRequest.create(
-        {
-            identity: {
-                permission: context.permissionLevel,
-                scope: String(context.appName),
-            },
-            info: {
-                link: createInfo,
-                scope: String(context.appName),
-            },
-            chainId: isMultiChain ? null : context.chain?.id,
-            chainIds: isMultiChain ? context.chains.map((c) => c.id) : undefined,
-            broadcast: false,
-        },
-        {zlib: context.esrOptions.zlib}
-    )
+    const request = SigningRequest.identity({
+        callback: prepareCallback(buoyUrl),
+        account: context.actor,
+        permission: context.permissionLevel,
+        scope: String(context.appName),
+    })
+    // const request = await SigningRequest.create(
+    //     {
+    //         identity: {
+    //             permission: context.permissionLevel,
+    //             scope: String(context.appName),
+    //         },
+    //         info: {
+    //             link: createInfo,
+    //             scope: String(context.appName),
+    //         },
+    //         chainId: isMultiChain ? null : context.chain?.id,
+    //         chainIds: isMultiChain ? context.chains.map((c) => c.id) : undefined,
+    //         broadcast: false,
+    //     },
+    //     {zlib: context.esrOptions.zlib}
+    // )
 
     // The buoy callback data for this request
     const callback = prepareCallbackChannel(buoyUrl)
@@ -107,6 +114,14 @@ export function getUserAgent(): string {
         agent += ' ' + navigator.userAgent
     }
     return agent
+}
+
+function prepareCallback(buoyUrl): CallbackType {
+    const {service, channel} = prepareCallbackChannel(buoyUrl)
+    return {
+        url: `${service}/${channel}`,
+        background: false,
+    }
 }
 
 function prepareCallbackChannel(buoyUrl): ReceiveOptions {
