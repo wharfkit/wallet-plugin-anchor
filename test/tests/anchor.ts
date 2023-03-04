@@ -7,9 +7,11 @@ import {
     verifyLoginCallbackResponse,
 } from 'src/anchor'
 
+import {zlib} from 'pako'
+
 import {mockLoginContext} from '../utils/mock-context'
 import {mockCallbackPayload, makeMockResolvedSigningRequest} from '$test/utils/mock-esr'
-import {mockPrivateKey, mockSignature1} from '$test/utils/mock-config'
+import {mockChainId2, mockPrivateKey, mockSignature1} from '$test/utils/mock-config'
 
 suite('anchor', () => {
     suite('createIdentityRequest', () => {
@@ -75,10 +77,14 @@ suite('anchor', () => {
         test('throws an error if the response is for the wrong chain id', () => {
             const context: LoginContext = mockLoginContext
             const callbackResponse: CallbackPayload = mockCallbackPayload
-            const expectedChain = context.chains[0]
-            callbackResponse.cid = 'chain2'
             try {
-                verifyLoginCallbackResponse(callbackResponse, context)
+                verifyLoginCallbackResponse(
+                    {
+                        ...callbackResponse,
+                        cid: mockChainId2,
+                    },
+                    context
+                )
             } catch (error) {
                 expect((error as Error).message).to.equal('Got response for wrong chain id')
             }

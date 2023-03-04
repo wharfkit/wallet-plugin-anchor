@@ -113,7 +113,8 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                             if (
                                 callbackResponse.link_ch &&
                                 callbackResponse.link_key &&
-                                callbackResponse.link_name
+                                callbackResponse.link_name &&
+                                callbackResponse.cid
                             ) {
                                 verifyLoginCallbackResponse(callbackResponse, context)
 
@@ -131,14 +132,16 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                                 this.data.channelName = callbackResponse.link_name
 
                                 resolve({
-                                    chain: Checksum256.from(callbackResponse.cid!),
+                                    chain: Checksum256.from(callbackResponse.cid),
                                     permissionLevel: PermissionLevel.from({
                                         actor: callbackResponse.sa,
                                         permission: callbackResponse.sp,
                                     }),
                                 })
                             } else {
-                                reject('Invalid response from Anchor')
+                                reject(
+                                    'Invalid response from Anchor, must contain link_ch, link_key, link_name and cid flags.'
+                                )
                             }
                         })
                         .catch((error) => {

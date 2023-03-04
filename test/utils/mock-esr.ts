@@ -1,7 +1,7 @@
 import {CallbackPayload, ResolvedSigningRequest, SigningRequest} from '@wharfkit/session'
 import zlib from 'pako'
 
-import {mockChainId} from './mock-config'
+import {mockChainId, mockPublicKey} from './mock-config'
 import {mockAbiProvider} from './mock-context'
 
 export const mockCallbackPayload: CallbackPayload = {
@@ -10,10 +10,13 @@ export const mockCallbackPayload: CallbackPayload = {
     rbn: '0',
     rid: '0',
     ex: '2020-07-10T08:40:20',
-    req: 'esr://AwAAAwAAAAAAAChdAAAVbXlhcHA6Ly9sb2dpbj17e2NpZH19AQljaGFpbl9pZHMFAgABAAo',
-    sa: 'foo',
-    sp: 'active',
-    cid: '1064487b3cd1a897ce03ae5b6a865651747e2e152090f99c1d19d44e01aea5a4',
+    req: 'esr://AgABAwACE2h0dHBzOi8vZXhhbXBsZS5jb20A',
+    sa: 'wharfkit1115',
+    sp: 'test',
+    cid: mockChainId,
+    link_ch: 'https://cb.test.com/a5b24a32-cce5-4ab5-b63d-8e29f83e25a9',
+    link_key: mockPublicKey,
+    link_name: 'anchor',
 }
 
 export const makeMockResolvedSigningRequest = () =>

@@ -14,11 +14,11 @@ import {
     mockPermissionLevel,
 } from '$test/utils/mock-config'
 import {mockFetch} from '$test/utils/mock-fetch'
-import {makeWallet} from '$test/utils/mock-wallet'
+import {makeAnchorWallet} from '$test/utils/mock-wallet'
 import {MockStorage} from './mock-storage'
 import {MockUserInterface} from './mock-userinterface'
 
-const wallet = makeWallet()
+const wallet = makeAnchorWallet()
 
 export const mockSessionKitOptions: SessionKitOptions = {
     appName: 'unittest',

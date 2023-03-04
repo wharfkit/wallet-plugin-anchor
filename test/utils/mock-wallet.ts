@@ -14,9 +14,14 @@ import {
 } from '@wharfkit/session'
 import {mockChainDefinition, mockPermissionLevel, mockPrivateKey} from './mock-config'
 import {makeMockAction} from './mock-transfer'
+import {WalletPluginAnchor} from 'src/index'
 
 export function makeWallet() {
     return new WalletPluginPrivateKey(PrivateKey.from(mockPrivateKey))
+}
+
+export function makeAnchorWallet() {
+    return new WalletPluginAnchor({buoyUrl: 'https://cb.test.com'})
 }
 
 export class MockWalletPluginConfigs extends AbstractWalletPlugin {

@@ -53,28 +53,13 @@ export async function createIdentityRequest(
     const isMultiChain = !(context.chain || context.chains.length === 1)
 
     // Create the request
-    const request = SigningRequest.identity({
-        callback: prepareCallback(buoyUrl),
-        account: context.actor,
-        permission: context.permissionLevel,
-        scope: String(context.appName),
-    })
-    // const request = await SigningRequest.create(
-    //     {
-    //         identity: {
-    //             permission: context.permissionLevel,
-    //             scope: String(context.appName),
-    //         },
-    //         info: {
-    //             link: createInfo,
-    //             scope: String(context.appName),
-    //         },
-    //         chainId: isMultiChain ? null : context.chain?.id,
-    //         chainIds: isMultiChain ? context.chains.map((c) => c.id) : undefined,
-    //         broadcast: false,
-    //     },
-    //     {zlib: context.esrOptions.zlib}
-    // )
+    const request = SigningRequest.identity(
+        {
+            callback: prepareCallback(buoyUrl),
+            scope: String(context.appName),
+        },
+        {zlib: context.esrOptions?.zlib}
+    )
 
     // The buoy callback data for this request
     const callback = prepareCallbackChannel(buoyUrl)
@@ -107,8 +92,7 @@ export function setTransactionCallback(resolved: ResolvedSigningRequest, buoyUrl
 }
 
 export function getUserAgent(): string {
-    // TODO: Pull proper version number to add to user agent string
-    const version = '0.0.1'
+    const version = process.env.npm_package_version
     let agent = `@wharfkit/wallet-plugin-anchor ${version}`
     if (typeof navigator !== 'undefined') {
         agent += ' ' + navigator.userAgent
@@ -125,7 +109,6 @@ function prepareCallback(buoyUrl): CallbackType {
 }
 
 function prepareCallbackChannel(buoyUrl): ReceiveOptions {
-    // The buoy callback data for this request
     return {
         service: buoyUrl,
         channel: uuid(),

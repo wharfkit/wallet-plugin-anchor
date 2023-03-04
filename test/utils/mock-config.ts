@@ -1,6 +1,7 @@
-import {ChainDefinition} from '@wharfkit/session'
+import {ChainDefinition, PrivateKey} from '@wharfkit/session'
 
 export const mockChainId = '73e4385a2708e6d7048834fbc1079f2fabb17b3c125b146af438971e90716c4d'
+export const mockChainId2 = '34593b65376aee3c9b06ea8a8595122b39333aaab4c76ad52587831fcc096590'
 export const mockUrl = 'https://jungle4.greymass.com'
 export const mockChainDefinition: ChainDefinition = ChainDefinition.from({
     id: mockChainId,
@@ -22,10 +23,11 @@ export const mockChainDefinitions: ChainDefinition[] = [
     }),
     ChainDefinition.from({
         id: '34593b65376aee3c9b06ea8a8595122b39333aaab4c76ad52587831fcc096590',
-        url: 'https://mockuserinterface.greymass.com',
+        url: 'https://jungle4.greymass.com',
     }),
 ]
 export const mockPrivateKey = '5Jtoxgny5tT7NiNFp1MLogviuPJ9NniWjnU4wKzaX4t7pL4kJ8s'
+export const mockPublicKey = String(PrivateKey.from(mockPrivateKey).toPublic())
 export const mockAccountName = 'wharfkit1111'
 export const mockPermissionName = 'test'
 export const mockPermissionLevel = `${mockAccountName}@${mockPermissionName}`
