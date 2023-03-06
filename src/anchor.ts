@@ -66,7 +66,7 @@ export async function createIdentityRequest(
             chainIds: isMultiChain ? context.chains.map((c) => c.id) : undefined,
             broadcast: false,
         },
-        {zlib: context.esrOptions.zlib}
+        context.esrOptions
     )
 
     // The buoy callback data for this request
