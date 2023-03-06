@@ -100,7 +100,7 @@ export function setTransactionCallback(resolved: ResolvedSigningRequest, buoyUrl
 }
 
 export function getUserAgent(): string {
-    const version = process.env.npm_package_version
+    const version = '__ver'
     let agent = `@wharfkit/wallet-plugin-anchor ${version}`
     if (typeof navigator !== 'undefined') {
         agent += ' ' + navigator.userAgent
