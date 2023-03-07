@@ -10,6 +10,7 @@ import {
     PublicKey,
     ResolvedSigningRequest,
     Serializer,
+    SigningRequest,
     TransactContext,
     WalletPluginConfig,
     WalletPluginLoginResponse,
@@ -228,10 +229,17 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                 .then((callbackResponse) => {
                     ResolvedSigningRequest.fromPayload(callbackResponse, context.esrOptions)
                         .then((resolvedRequest) => {
-                            cancelPrompt()
-                            resolve({
-                                signatures: extractSignaturesFromCallback(callbackResponse),
-                                request: resolvedRequest.request,
+                            SigningRequest.create(
+                                {
+                                    transaction: resolvedRequest.transaction,
+                                },
+                                context.esrOptions
+                            ).then((newRequest) => {
+                                cancelPrompt()
+                                resolve({
+                                    signatures: extractSignaturesFromCallback(callbackResponse),
+                                    request: newRequest,
+                                })
                             })
                         })
                         .catch((error) => {
@@ -261,6 +269,8 @@ async function waitForCallback(callbackArgs): Promise<CallbackPayload> {
 
     // Process the identity request callback payload
     const payload = JSON.parse(callbackResponse) as CallbackPayload
+
+    console.log({payload})
 
     if (payload.sa === undefined || payload.sp === undefined || payload.cid === undefined) {
         throw new Error('Invalid response from Anchor')
