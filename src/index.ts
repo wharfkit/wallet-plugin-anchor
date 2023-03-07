@@ -192,7 +192,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                         type: 'link',
                         label: 'Sign manually or with another device',
                         data: {
-                            href: String(resolved),
+                            href: String(resolved.request),
                             label: 'Trigger Manually',
                         },
                     },
