@@ -79,87 +79,90 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
      */
     login(context: LoginContext): Promise<WalletPluginLoginResponse> {
         return new Promise((resolve, reject) => {
-            context.ui?.status('Preparing request for Anchor...')
-
-            // Create the identity request to be presented to the user
-            createIdentityRequest(context, this.buoyUrl)
-                .then(({callback, request, requestKey, privateKey}) => {
-                    // Tell Wharf we need to prompt the user with a QR code and a button
-                    const promptResonse = context.ui?.prompt({
-                        title: 'Login with Anchor',
-                        body: 'Scan the QR-code with Anchor on another device or use the button to open it here.',
-                        elements: [
-                            {
-                                type: 'qr',
-                                data: String(request),
-                            },
-                            {
-                                type: 'link',
-                                label: 'Open Anchor',
-                                data: {
-                                    href: String(request),
-                                    label: 'Open Anchor',
-                                },
-                            },
-                        ],
-                    })
-
-                    promptResonse.catch((error) => {
-                        // Throw if what we caught was a cancelation
-                        if (error instanceof Canceled) {
-                            reject(error)
-                        }
-                    })
-
-                    // Await a promise race to wait for either the wallet response or the cancel
-                    waitForCallback(callback)
-                        .then((callbackResponse: CallbackPayload) => {
-                            if (
-                                callbackResponse.link_ch &&
-                                callbackResponse.link_key &&
-                                callbackResponse.link_name &&
-                                callbackResponse.cid
-                            ) {
-                                verifyLoginCallbackResponse(callbackResponse, context)
-
-                                this.data.chain = callbackResponse.cid
-                                this.data.auth = {
-                                    actor: callbackResponse.sa,
-                                    permission: callbackResponse.sp,
-                                }
-                                this.data.requestKey = requestKey
-                                this.data.privateKey = privateKey
-                                this.data.signerKey =
-                                    callbackResponse.link_key &&
-                                    PublicKey.from(callbackResponse.link_key)
-                                this.data.channelUrl = callbackResponse.link_ch
-                                this.data.channelName = callbackResponse.link_name
-
-                                resolve({
-                                    chain: Checksum256.from(callbackResponse.cid),
-                                    permissionLevel: PermissionLevel.from({
-                                        actor: callbackResponse.sa,
-                                        permission: callbackResponse.sp,
-                                    }),
-                                })
-                            } else {
-                                reject(
-                                    'Invalid response from Anchor, must contain link_ch, link_key, link_name and cid flags.'
-                                )
-                            }
-                        })
-                        .catch((error) => {
-                            reject(error)
-                        })
+            this.handleLogin(context)
+                .then((response) => {
+                    resolve(response)
                 })
                 .catch((error) => {
                     reject(error)
                 })
-
-            // TODO: Response validation
-            // https://github.com/greymass/anchor-link/blob/508599dd3fb3420b60ee2fa470bf60ce9ddca1c5/src/link.ts#L379-L429
-            // Note: We can skip the resolution/broadcasting, happens in session transact
         })
+    }
+
+    async handleLogin(context: LoginContext): Promise<WalletPluginLoginResponse> {
+        try {
+            context.ui?.status('Preparing request for Anchor...')
+
+            // Create the identity request to be presented to the user
+            const {callback, request, requestKey, privateKey} = await createIdentityRequest(
+                context,
+                this.buoyUrl
+            )
+            // Tell Wharf we need to prompt the user with a QR code and a button
+            const promptResonse = context.ui?.prompt({
+                title: 'Login with Anchor',
+                body: 'Scan the QR-code with Anchor on another device or use the button to open it here.',
+                elements: [
+                    {
+                        type: 'qr',
+                        data: String(request),
+                    },
+                    {
+                        type: 'link',
+                        label: 'Open Anchor',
+                        data: {
+                            href: String(request),
+                            label: 'Open Anchor',
+                        },
+                    },
+                ],
+            })
+
+            promptResonse.catch((error) => {
+                // Throw if what we caught was a cancelation
+                if (error instanceof Canceled) {
+                    throw error
+                }
+            })
+
+            // Await a promise race to wait for either the wallet response or the cancel
+            const callbackResponse: CallbackPayload = await waitForCallback(callback)
+
+            if (
+                callbackResponse.link_ch &&
+                callbackResponse.link_key &&
+                callbackResponse.link_name &&
+                callbackResponse.cid
+            ) {
+                verifyLoginCallbackResponse(callbackResponse, context)
+
+                this.data.chain = callbackResponse.cid
+                this.data.auth = {
+                    actor: callbackResponse.sa,
+                    permission: callbackResponse.sp,
+                }
+                this.data.requestKey = requestKey
+                this.data.privateKey = privateKey
+                this.data.signerKey =
+                    callbackResponse.link_key && PublicKey.from(callbackResponse.link_key)
+                this.data.channelUrl = callbackResponse.link_ch
+                this.data.channelName = callbackResponse.link_name
+
+                return {
+                    chain: Checksum256.from(callbackResponse.cid),
+                    permissionLevel: PermissionLevel.from({
+                        actor: callbackResponse.sa,
+                        permission: callbackResponse.sp,
+                    }),
+                }
+            } else {
+                throw new Error(
+                    'Invalid response from Anchor, must contain link_ch, link_key, link_name and cid flags.'
+                )
+            }
+        } catch (error) {
+            throw error
+        }
     }
 
     /**
@@ -175,8 +178,20 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         context: TransactContext
     ): Promise<WalletPluginSignResponse> {
         return new Promise((resolve, reject) => {
+            try {
+                this.handleSignatureRequest(resolved, context).then((response) => {
+                    resolve(response)
+                })
+            } catch (error) {
+                reject(error)
+            }
+        })
+    }
+
+    private async handleSignatureRequest(resolved, context) {
+        try {
             if (!context.ui) {
-                return reject(new Error('No UI available'))
+                throw new Error('No UI available')
             }
             context.ui.status('Preparing request for Anchor...')
 
@@ -203,7 +218,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             promptPromise.catch((error) => {
                 // Throw if what we caught was a cancelation
                 if (error instanceof Canceled) {
-                    reject(error)
+                    throw error
                 }
             })
 
@@ -225,31 +240,29 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                 channel,
             })
 
-            waitForCallback(callback)
-                .then((callbackResponse) => {
-                    ResolvedSigningRequest.fromPayload(callbackResponse, context.esrOptions)
-                        .then((resolvedRequest) => {
-                            SigningRequest.create(
-                                {
-                                    transaction: resolvedRequest.transaction,
-                                },
-                                context.esrOptions
-                            ).then((newRequest) => {
-                                cancelPrompt()
-                                resolve({
-                                    signatures: extractSignaturesFromCallback(callbackResponse),
-                                    request: newRequest,
-                                })
-                            })
-                        })
-                        .catch((error) => {
-                            reject(error)
-                        })
-                })
-                .catch((error) => {
-                    reject(error)
-                })
-        })
+            const callbackResponse = await waitForCallback(callback)
+
+            const resolvedRequest = await ResolvedSigningRequest.fromPayload(
+                callbackResponse,
+                context.esrOptions
+            )
+
+            const newRequest = await SigningRequest.create(
+                {
+                    transaction: resolvedRequest.transaction,
+                },
+                context.esrOptions
+            )
+
+            cancelPrompt()
+
+            return {
+                signatures: extractSignaturesFromCallback(callbackResponse),
+                request: newRequest,
+            }
+        } catch (error) {
+            throw error
+        }
     }
 }
 
