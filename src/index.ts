@@ -26,6 +26,7 @@ import {
     setTransactionCallback,
     verifyLoginCallbackResponse,
 } from './anchor'
+import {LinkInfo} from './anchor-types'
 
 import {extractSignaturesFromCallback} from './esr'
 
@@ -195,7 +196,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             }
             context.ui.status('Preparing request for Anchor...')
 
-            console.log({chain: resolved.request.getChainId(), resolved})
+            const expiration = resolved.transaction.expiration.toDate()
 
             // Tell Wharf we need to prompt the user with a QR code and a button
             const promptPromise = context.ui.prompt({
@@ -204,7 +205,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                 elements: [
                     {
                         type: 'countdown',
-                        data: resolved.transaction.expiration.toDate().toISOString(),
+                        data: expiration.toISOString(),
                     },
                     {
                         type: 'link',
@@ -228,10 +229,11 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
 
             const callback = setTransactionCallback(resolved, this.buoyUrl)
 
-            resolved.request.setInfoKey(
-                'expiration',
-                resolved.transaction.expiration.toDate().toISOString()
-            )
+            const info = LinkInfo.from({
+                expiration,
+            })
+
+            resolved.request.setInfoKey('link', info)
 
             const sealedMessage = sealMessage(
                 resolved.request.encode(true, false),
@@ -289,8 +291,6 @@ async function waitForCallback(callbackArgs): Promise<CallbackPayload> {
 
     // Process the identity request callback payload
     const payload = JSON.parse(callbackResponse) as CallbackPayload
-
-    console.log({payload})
 
     if (payload.sa === undefined || payload.sp === undefined || payload.cid === undefined) {
         throw new Error('Invalid response from Anchor')

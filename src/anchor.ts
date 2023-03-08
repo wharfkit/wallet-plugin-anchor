@@ -49,8 +49,6 @@ export async function createIdentityRequest(
         user_agent: getUserAgent(),
     })
 
-    console.log({createInfo})
-
     // Determine based on the options whether this is a multichain request
     const isMultiChain = !(context.chain || context.chains.length === 1)
 
@@ -68,8 +66,6 @@ export async function createIdentityRequest(
             scope: String(context.appName),
         },
     })
-
-    console.log({request})
 
     // Return the request and the callback data
     return {
