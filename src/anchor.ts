@@ -12,6 +12,7 @@ import {
     Serializer,
     SigningRequest,
     UInt64,
+    CallbackType,
 } from '@wharfkit/session'
 
 import {uuid} from './utils'
@@ -48,36 +49,31 @@ export async function createIdentityRequest(
         user_agent: getUserAgent(),
     })
 
+    console.log({createInfo})
+
     // Determine based on the options whether this is a multichain request
     const isMultiChain = !(context.chain || context.chains.length === 1)
 
+    // Create the callback
+    const callbackChannel = prepareCallbackChannel(buoyUrl)
+
     // Create the request
-    const request = await SigningRequest.create(
-        {
-            identity: {
-                permission: context.permissionLevel,
-                scope: String(context.appName),
-            },
-            info: {
-                link: createInfo,
-                scope: String(context.appName),
-            },
-            chainId: isMultiChain ? null : context.chain?.id,
-            chainIds: isMultiChain ? context.chains.map((c) => c.id) : undefined,
-            broadcast: false,
+    const request = SigningRequest.identity({
+        callback: prepareCallback(callbackChannel),
+        scope: String(context.appName),
+        chainId: isMultiChain ? null : context.chain?.id,
+        chainIds: isMultiChain ? context.chains.map((c) => c.id) : undefined,
+        info: {
+            link: createInfo,
+            scope: String(context.appName),
         },
-        context.esrOptions
-    )
+    })
 
-    // The buoy callback data for this request
-    const callback = prepareCallbackChannel(buoyUrl)
-
-    // Specify the callback URL on the request itself so the wallet can respond to it
-    request.setCallback(`${callback.service}/${callback.channel}`, true)
+    console.log({request})
 
     // Return the request and the callback data
     return {
-        callback,
+        callback: callbackChannel,
         request,
         requestKey,
         privateKey,
@@ -106,6 +102,14 @@ export function getUserAgent(): string {
         agent += ' ' + navigator.userAgent
     }
     return agent
+}
+
+export function prepareCallback(callbackChannel: ReceiveOptions): CallbackType {
+    const {service, channel} = callbackChannel
+    return {
+        url: `${service}/${channel}`,
+        background: true,
+    }
 }
 
 function prepareCallbackChannel(buoyUrl): ReceiveOptions {

@@ -195,6 +195,8 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             }
             context.ui.status('Preparing request for Anchor...')
 
+            console.log({chain: resolved.request.getChainId(), resolved})
+
             // Tell Wharf we need to prompt the user with a QR code and a button
             const promptPromise = context.ui.prompt({
                 title: 'Sign',
