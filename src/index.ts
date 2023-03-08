@@ -228,6 +228,11 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
 
             const callback = setTransactionCallback(resolved, this.buoyUrl)
 
+            resolved.request.setInfoKey(
+                'expiration',
+                resolved.transaction.expiration.toDate().toISOString()
+            )
+
             const sealedMessage = sealMessage(
                 resolved.request.encode(true, false),
                 PrivateKey.from(this.data.privateKey),
