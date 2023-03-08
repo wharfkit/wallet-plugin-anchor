@@ -22,7 +22,7 @@ const banner = `
  */
 `.trim()
 
-const external = Object.keys(pkg.dependencies)
+const external = [...Object.keys(pkg.dependencies), ...Object.keys(pkg.peerDependencies)]
 
 /** @type {import('rollup').RollupOptions} */
 export default [
