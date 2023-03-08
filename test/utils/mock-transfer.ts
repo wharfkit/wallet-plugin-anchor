@@ -1,4 +1,4 @@
-import {Action, API, Asset, Name, Struct, Transaction} from '@greymass/eosio'
+import {Action, API, Asset, Name, Struct, Transaction} from '@wharfkit/session'
 
 import {mockAccountName, mockPermissionName} from './mock-config'
 

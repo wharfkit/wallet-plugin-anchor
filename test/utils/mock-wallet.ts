@@ -1,13 +1,16 @@
-import {Checksum256, PermissionLevel, PrivateKey, Transaction} from '@greymass/eosio'
 import {WalletPluginPrivateKey} from '@wharfkit/wallet-plugin-privatekey'
 
 import {
     AbstractWalletPlugin,
     ChainDefinition,
+    Checksum256,
     LoginContext,
+    PermissionLevel,
+    PrivateKey,
     ResolvedSigningRequest,
     SigningRequest,
     TransactContext,
+    Transaction,
     WalletPluginConfig,
     WalletPluginData,
     WalletPluginSignResponse,

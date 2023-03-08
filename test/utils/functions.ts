@@ -1,4 +1,4 @@
-import {Action, AnyAction, Transaction} from '@greymass/eosio'
+import {Action, AnyAction, Transaction} from '@wharfkit/session'
 import {SigningRequest} from 'eosio-signing-request'
 
 /**

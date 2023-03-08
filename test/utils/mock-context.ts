@@ -1,14 +1,17 @@
 import {
     ABICache,
+    APIClient,
     ChainDefinition,
-    Session,
+    FetchProvider,
     LoginContext,
+    Name,
+    PermissionLevel,
+    Session,
     SigningRequest,
     TransactArgs,
     TransactContext,
     TransactContextOptions,
 } from '@wharfkit/session'
-import {APIClient, FetchProvider, PermissionLevel, Name} from '@greymass/eosio'
 import zlib from 'pako'
 
 import {mockChainDefinition, mockUrl} from './mock-config'
@@ -49,6 +52,7 @@ export const mockLoginContext: LoginContext = {
     },
     uiRequirements: {
         requiresChainSelect: true,
+        requiresPermissionEntry: false,
         requiresPermissionSelect: true,
         requiresWalletSelect: true,
     },

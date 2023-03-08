@@ -1,6 +1,5 @@
-import {PermissionLevel} from '@greymass/eosio'
-
 import {
+    PermissionLevel,
     Session,
     SessionArgs,
     SessionKit,
