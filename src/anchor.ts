@@ -2,6 +2,7 @@ import {ReceiveOptions} from '@greymass/buoy'
 import {AES_CBC} from '@greymass/miniaes'
 import {
     Bytes,
+    CallbackType,
     ChainDefinition,
     Checksum256,
     Checksum512,
@@ -12,7 +13,6 @@ import {
     Serializer,
     SigningRequest,
     UInt64,
-    CallbackType,
 } from '@wharfkit/session'
 
 import {uuid} from './utils'

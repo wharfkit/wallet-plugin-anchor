@@ -91,78 +91,74 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
     }
 
     async handleLogin(context: LoginContext): Promise<WalletPluginLoginResponse> {
-        try {
-            context.ui?.status('Preparing request for Anchor...')
+        context.ui?.status('Preparing request for Anchor...')
 
-            // Create the identity request to be presented to the user
-            const {callback, request, requestKey, privateKey} = await createIdentityRequest(
-                context,
-                this.buoyUrl
-            )
-            // Tell Wharf we need to prompt the user with a QR code and a button
-            const promptResonse = context.ui?.prompt({
-                title: 'Login with Anchor',
-                body: 'Scan the QR-code with Anchor on another device or use the button to open it here.',
-                elements: [
-                    {
-                        type: 'qr',
-                        data: String(request),
-                    },
-                    {
-                        type: 'link',
+        // Create the identity request to be presented to the user
+        const {callback, request, requestKey, privateKey} = await createIdentityRequest(
+            context,
+            this.buoyUrl
+        )
+        // Tell Wharf we need to prompt the user with a QR code and a button
+        const promptResonse = context.ui?.prompt({
+            title: 'Login with Anchor',
+            body: 'Scan the QR-code with Anchor on another device or use the button to open it here.',
+            elements: [
+                {
+                    type: 'qr',
+                    data: String(request),
+                },
+                {
+                    type: 'link',
+                    label: 'Open Anchor',
+                    data: {
+                        href: String(request),
                         label: 'Open Anchor',
-                        data: {
-                            href: String(request),
-                            label: 'Open Anchor',
-                        },
                     },
-                ],
-            })
+                },
+            ],
+        })
 
-            promptResonse.catch((error) => {
-                // Throw if what we caught was a cancelation
-                if (error instanceof Canceled) {
-                    throw error
-                }
-            })
+        promptResonse.catch((error) => {
+            // Throw if what we caught was a cancelation
+            if (error instanceof Canceled) {
+                throw error
+            }
+        })
 
-            // Await a promise race to wait for either the wallet response or the cancel
-            const callbackResponse: CallbackPayload = await waitForCallback(callback)
+        // Await a promise race to wait for either the wallet response or the cancel
+        const callbackResponse: CallbackPayload = await waitForCallback(callback)
 
-            if (
-                callbackResponse.link_ch &&
-                callbackResponse.link_key &&
-                callbackResponse.link_name &&
-                callbackResponse.cid
-            ) {
-                verifyLoginCallbackResponse(callbackResponse, context)
+        if (
+            callbackResponse.link_ch &&
+            callbackResponse.link_key &&
+            callbackResponse.link_name &&
+            callbackResponse.cid
+        ) {
+            verifyLoginCallbackResponse(callbackResponse, context)
 
-                this.data.chain = callbackResponse.cid
-                this.data.auth = {
+            this.data.chain = callbackResponse.cid
+            this.data.auth = {
+                actor: callbackResponse.sa,
+                permission: callbackResponse.sp,
+            }
+            this.data.requestKey = requestKey
+            this.data.privateKey = privateKey
+            this.data.signerKey =
+                callbackResponse.link_key && PublicKey.from(callbackResponse.link_key)
+            this.data.channelUrl = callbackResponse.link_ch
+            this.data.channelName = callbackResponse.link_name
+
+            return {
+                chain: Checksum256.from(callbackResponse.cid),
+                permissionLevel: PermissionLevel.from({
                     actor: callbackResponse.sa,
                     permission: callbackResponse.sp,
-                }
-                this.data.requestKey = requestKey
-                this.data.privateKey = privateKey
-                this.data.signerKey =
-                    callbackResponse.link_key && PublicKey.from(callbackResponse.link_key)
-                this.data.channelUrl = callbackResponse.link_ch
-                this.data.channelName = callbackResponse.link_name
-
-                return {
-                    chain: Checksum256.from(callbackResponse.cid),
-                    permissionLevel: PermissionLevel.from({
-                        actor: callbackResponse.sa,
-                        permission: callbackResponse.sp,
-                    }),
-                }
-            } else {
-                throw new Error(
-                    'Invalid response from Anchor, must contain link_ch, link_key, link_name and cid flags.'
-                )
+                }),
             }
-        } catch (error) {
-            throw error
+        } else {
+            throw new Error(
+                'Invalid response from Anchor, must contain link_ch, link_key, link_name and cid flags.'
+            )
         }
     }
 
@@ -190,87 +186,83 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
     }
 
     private async handleSignatureRequest(resolved, context) {
-        try {
-            if (!context.ui) {
-                throw new Error('No UI available')
-            }
-            context.ui.status('Preparing request for Anchor...')
+        if (!context.ui) {
+            throw new Error('No UI available')
+        }
+        context.ui.status('Preparing request for Anchor...')
 
-            const expiration = resolved.transaction.expiration.toDate()
+        const expiration = resolved.transaction.expiration.toDate()
 
-            // Tell Wharf we need to prompt the user with a QR code and a button
-            const promptPromise = context.ui.prompt({
-                title: 'Sign',
-                body: `Please open the Anchor Wallet on "${this.data.channelName}" to review and sign the transaction.`,
-                elements: [
-                    {
-                        type: 'countdown',
-                        data: expiration.toISOString(),
-                    },
-                    {
-                        type: 'link',
-                        label: 'Sign manually or with another device',
-                        data: {
-                            href: String(resolved.request),
-                            label: 'Trigger Manually',
-                        },
-                    },
-                ],
-            })
-
-            promptPromise.catch((error) => {
-                // Throw if what we caught was a cancelation
-                if (error instanceof Canceled) {
-                    throw error
-                }
-            })
-
-            const {cancel: cancelPrompt} = promptPromise
-
-            const callback = setTransactionCallback(resolved, this.buoyUrl)
-
-            const info = LinkInfo.from({
-                expiration,
-            })
-
-            resolved.request.setInfoKey('link', info)
-
-            const sealedMessage = sealMessage(
-                resolved.request.encode(true, false),
-                PrivateKey.from(this.data.privateKey),
-                PublicKey.from(this.data.signerKey)
-            )
-
-            const service = new URL(this.data.channelUrl).origin
-            const channel = new URL(this.data.channelUrl).pathname.substring(1)
-
-            send(Serializer.encode({object: sealedMessage}).array, {
-                service,
-                channel,
-            })
-
-            const callbackResponse = await waitForCallback(callback)
-
-            const resolvedRequest = await ResolvedSigningRequest.fromPayload(
-                callbackResponse,
-                context.esrOptions
-            )
-
-            const newRequest = await SigningRequest.create(
+        // Tell Wharf we need to prompt the user with a QR code and a button
+        const promptPromise = context.ui.prompt({
+            title: 'Sign',
+            body: `Please open the Anchor Wallet on "${this.data.channelName}" to review and sign the transaction.`,
+            elements: [
                 {
-                    transaction: resolvedRequest.transaction,
+                    type: 'countdown',
+                    data: expiration.toISOString(),
                 },
-                context.esrOptions
-            )
+                {
+                    type: 'link',
+                    label: 'Sign manually or with another device',
+                    data: {
+                        href: String(resolved.request),
+                        label: 'Trigger Manually',
+                    },
+                },
+            ],
+        })
 
-            cancelPrompt()
-
-            return {
-                signatures: extractSignaturesFromCallback(callbackResponse),
-                request: newRequest,
+        promptPromise.catch((error) => {
+            // Throw if what we caught was a cancelation
+            if (error instanceof Canceled) {
+                throw error
             }
-        } catch (error) {
-            throw error
+        })
+
+        const {cancel: cancelPrompt} = promptPromise
+
+        const callback = setTransactionCallback(resolved, this.buoyUrl)
+
+        const info = LinkInfo.from({
+            expiration,
+        })
+
+        resolved.request.setInfoKey('link', info)
+
+        const sealedMessage = sealMessage(
+            resolved.request.encode(true, false),
+            PrivateKey.from(this.data.privateKey),
+            PublicKey.from(this.data.signerKey)
+        )
+
+        const service = new URL(this.data.channelUrl).origin
+        const channel = new URL(this.data.channelUrl).pathname.substring(1)
+
+        send(Serializer.encode({object: sealedMessage}).array, {
+            service,
+            channel,
+        })
+
+        const callbackResponse = await waitForCallback(callback)
+
+        const resolvedRequest = await ResolvedSigningRequest.fromPayload(
+            callbackResponse,
+            context.esrOptions
+        )
+
+        const newRequest = await SigningRequest.create(
+            {
+                transaction: resolvedRequest.transaction,
+            },
+            context.esrOptions
+        )
+
+        cancelPrompt()
+
+        return {
+            signatures: extractSignaturesFromCallback(callbackResponse),
+            request: newRequest,
         }
     }
 }
