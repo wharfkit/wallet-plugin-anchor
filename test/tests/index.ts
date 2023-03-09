@@ -1,8 +1,14 @@
-import {assert} from 'chai'
+import chai, {expect} from 'chai'
 import {PermissionLevel, SessionKit} from '@wharfkit/session'
+import sinon from 'sinon'
+import sinonChai from 'sinon-chai'
+import * as buoy from '@greymass/buoy'
 
-import {WalletPluginTEMPLATE} from '$lib'
-import {mockFetch} from '$test/utils/mock-fetch'
+chai.use(sinonChai)
+
+import {mockSessionKitOptions} from '$test/utils/mock-session'
+import {mockCallbackPayload} from '$test/utils/mock-esr'
+import {mockChainId} from '$test/utils/mock-config'
 
 const mockChainDefinition = {
     id: '73e4385a2708e6d7048834fbc1079f2fabb17b3c125b146af438971e90716c4d',
@@ -11,23 +17,25 @@ const mockChainDefinition = {
 
 const mockPermissionLevel = PermissionLevel.from('wharfkit1115@test')
 
-const mockSessionKitOptions = {
-    appName: 'unittests',
-    chains: [mockChainDefinition],
-    fetch: mockFetch, // Required for unit tests
-    walletPlugins: [new WalletPluginTEMPLATE()],
-}
-
 suite('wallet plugin', function () {
+    this.timeout(120 * 1000)
+    this.slow(5 * 1000)
+
+    // TODO: Implement a real test, this currently open a socket and expects Anchor to respond.
     test('login and sign', async function () {
+        sinon.stub(buoy, 'receive').resolves(JSON.stringify(mockCallbackPayload))
+        sinon.stub(buoy, 'send')
+
         const kit = new SessionKit(mockSessionKitOptions)
         const {session} = await kit.login({
-            chain: mockChainDefinition.id,
+            chain: mockChainId,
             permissionLevel: mockPermissionLevel,
         })
-        assert.isTrue(session.chain.equals(mockChainDefinition))
-        assert.isTrue(session.actor.equals(mockPermissionLevel.actor))
-        assert.isTrue(session.permission.equals(mockPermissionLevel.permission))
+
+        expect(String(session.chain.id)).to.equal(mockChainId)
+        expect(String(session.actor)).to.equal(String(mockPermissionLevel.actor))
+        expect(String(session.permission)).to.equal(String(mockPermissionLevel.permission))
+
         const result = await session.transact(
             {
                 action: {
@@ -46,7 +54,9 @@ suite('wallet plugin', function () {
                 broadcast: false,
             }
         )
-        assert.isTrue(result.signer.equals(mockPermissionLevel))
-        assert.equal(result.signatures.length, 1)
+
+        expect(String(result.signer.actor)).to.equal(String(mockPermissionLevel.actor))
+        expect(String(result.signer.permission)).to.equal(String(mockPermissionLevel.permission))
+        expect(result.signatures).to.be.length(1)
     })
 })

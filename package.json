@@ -1,12 +1,12 @@
 {
-    "name": "@wharfkit/wallet-plugin-template",
-    "description": "A template to create wallet plugins for use with @wharfkit/session.",
-    "version": "0.1.0",
-    "homepage": "https://github.com/wharfkit/wallet-plugin-template",
+    "name": "@wharfkit/wallet-plugin-anchor",
+    "description": "An Anchor plugin for use with @wharfkit/session.",
+    "version": "0.3.0",
+    "homepage": "https://github.com/wharfkit/wallet-plugin-anchor",
     "license": "BSD-3-Clause",
-    "main": "lib/wallet-plugin-template.js",
-    "module": "lib/wallet-plugin-template.m.js",
-    "types": "lib/wallet-plugin-template.d.ts",
+    "main": "lib/wallet-plugin-anchor.js",
+    "module": "lib/wallet-plugin-anchor.m.js",
+    "types": "lib/wallet-plugin-anchor.d.ts",
     "sideEffects": false,
     "files": [
         "lib/*",
@@ -16,10 +16,12 @@
         "prepare": "make"
     },
     "dependencies": {
-        "tslib": "^2.1.0"
+        "@greymass/buoy": "^1.0.3",
+        "@greymass/miniaes": "^1.0.0",
+        "isomorphic-ws": "^5.0.0"
     },
     "peerDependencies": {
-        "@wharfkit/session": "^0.3.0-ui-5"
+        "@wharfkit/session": "^0.3.1"
     },
     "devDependencies": {
         "@rollup/plugin-alias": "^3.1.4",
@@ -34,8 +36,10 @@
         "@types/node": "^18.7.18",
         "@typescript-eslint/eslint-plugin": "^5.20.0",
         "@typescript-eslint/parser": "^5.20.0",
-        "@wharfkit/session": "^0.3.0-ui-5",
+        "@wharfkit/session": "^0.3.1",
+        "@wharfkit/wallet-plugin-privatekey": "^0.3.0",
         "chai": "^4.3.4",
+        "eosio-signing-request": "^2.5.2",
         "eslint": "^8.13.0",
         "eslint-config-prettier": "^8.1.0",
         "eslint-plugin-prettier": "^4.0.0",
@@ -43,13 +47,19 @@
         "mocha": "^10.0.0",
         "node-fetch": "^2.6.1",
         "nyc": "^15.1.0",
+        "pako": "^2.1.0",
         "prettier": "^2.2.1",
         "rollup": "^2.70.2",
         "rollup-plugin-dts": "^4.2.1",
         "rollup-plugin-terser": "^7.0.2",
+        "sinon": "^15.0.1",
+        "sinon-chai": "^3.7.0",
         "ts-node": "^10.9.1",
         "tsconfig-paths": "^4.1.1",
+        "tslib": "^2.1.0",
         "typedoc": "^0.23.14",
-        "typescript": "^4.1.2"
+        "typescript": "^4.1.2",
+        "ws": "^8.12.0",
+        "yarn-deduplicate": "^6.0.1"
     }
 }
