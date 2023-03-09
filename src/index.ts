@@ -1,23 +1,60 @@
+import {receive, send} from '@greymass/buoy'
 import {
+    AbstractWalletPlugin,
+    CallbackPayload,
+    Cancelable,
+    Canceled,
     Checksum256,
     LoginContext,
     PermissionLevel,
+    PrivateKey,
+    PromptResponse,
+    PublicKey,
     ResolvedSigningRequest,
-    Signature,
+    Serializer,
+    SigningRequest,
     TransactContext,
-    WalletPlugin,
     WalletPluginConfig,
-    WalletPluginLoginOptions,
     WalletPluginLoginResponse,
     WalletPluginMetadata,
+    WalletPluginSignResponse,
 } from '@wharfkit/session'
 
-import {receive} from '@greymass/buoy'
 import WebSocket from 'isomorphic-ws'
-import {createIdentityRequest} from './anchor'
-import {CallbackPayload} from '@wharfkit/session'
 
-export class WalletPluginAnchor implements WalletPlugin {
+import {
+    createIdentityRequest,
+    sealMessage,
+    setTransactionCallback,
+    verifyLoginCallbackResponse,
+} from './anchor'
+import {LinkInfo} from './anchor-types'
+
+import {extractSignaturesFromCallback} from './esr'
+
+interface WalletPluginOptions {
+    buoyUrl?: string
+}
+export class WalletPluginAnchor extends AbstractWalletPlugin {
+    chain: Checksum256 | undefined
+    auth: PermissionLevel | undefined
+    requestKey: PublicKey | undefined
+    privateKey: PrivateKey | undefined
+    signerKey: PublicKey | undefined
+    channelUrl: string | undefined
+    channelName: string | undefined
+    buoyUrl: string
+
+    constructor(options?: WalletPluginOptions) {
+        super()
+
+        this.buoyUrl = options?.buoyUrl || 'https://cb.anchor.link'
+    }
+
+    public get id(): string {
+        return 'anchor'
+    }
+
     /**
      * The logic configuration for the wallet plugin.
      */
@@ -43,17 +80,28 @@ export class WalletPluginAnchor implements WalletPlugin {
      * @param options WalletPluginLoginOptions
      * @returns Promise<WalletPluginLoginResponse>
      */
-    async login(
-        context: LoginContext,
-        options: WalletPluginLoginOptions
-    ): Promise<WalletPluginLoginResponse> {
-        context.ui.status('Preparing request for Anchor...')
+    login(context: LoginContext): Promise<WalletPluginLoginResponse> {
+        return new Promise((resolve, reject) => {
+            this.handleLogin(context)
+                .then((response) => {
+                    resolve(response)
+                })
+                .catch((error) => {
+                    reject(error)
+                })
+        })
+    }
+
+    async handleLogin(context: LoginContext): Promise<WalletPluginLoginResponse> {
+        context.ui?.status('Preparing request for Anchor...')
 
         // Create the identity request to be presented to the user
-        const {callback, request} = await createIdentityRequest(context, options)
-
+        const {callback, request, requestKey, privateKey} = await createIdentityRequest(
+            context,
+            this.buoyUrl
+        )
         // Tell Wharf we need to prompt the user with a QR code and a button
-        context.ui.prompt({
+        const promptResonse = context.ui?.prompt({
             title: 'Login with Anchor',
             body: 'Scan the QR-code with Anchor on another device or use the button to open it here.',
             elements: [
@@ -62,78 +110,60 @@ export class WalletPluginAnchor implements WalletPlugin {
                     data: String(request),
                 },
                 {
-                    type: 'button',
+                    type: 'link',
                     label: 'Open Anchor',
-                    data: String(request),
+                    data: {
+                        href: String(request),
+                        label: 'Open Anchor',
+                    },
                 },
             ],
         })
 
-        // Use the buoy-client to create a promise and wait for a response to the identity request
-        const walletResponse = receive({...callback, WebSocket})
-
-        // TODO: Implement cancel logic from the UI
-        const cancel = new Promise<never>(() =>
-            //resolve,
-            //reject
-            {
-                // // Code from anchor-link...
-                // t.onRequest(request, (reason) => {
-                //     if (done) {
-                //         // ignore any cancel calls once callbackResponse below has resolved
-                //         return
-                //     }
-                //     const error = typeof reason === 'string' ? new CancelError(reason) : reason
-                //     if (t.recoverError && t.recoverError(error, request) === true) {
-                //         // transport was able to recover from the error
-                //         return
-                //     }
-                //     walletResponse
-                //     callback.cancel()
-                //     reject(error)
-                // })
+        promptResonse.catch((error) => {
+            // Throw if what we caught was a cancelation
+            if (error instanceof Canceled) {
+                throw error
             }
-        )
+        })
 
         // Await a promise race to wait for either the wallet response or the cancel
-        const callbackResponse = await Promise.race([walletResponse, cancel])
+        const callbackResponse: CallbackPayload = await waitForCallback(callback)
 
-        // If the promise was rejected, throw an error
-        if (typeof callbackResponse.rejected === 'string') {
-            throw new Error(callbackResponse.rejected)
-        }
+        if (
+            callbackResponse.link_ch &&
+            callbackResponse.link_key &&
+            callbackResponse.link_name &&
+            callbackResponse.cid
+        ) {
+            verifyLoginCallbackResponse(callbackResponse, context)
 
-        // Process the identity request callback payload
-        const payload = JSON.parse(callbackResponse) as CallbackPayload
-        if (payload.sa === undefined || payload.sp === undefined || payload.cid === undefined) {
-            throw new Error('Invalid response from Anchor')
-        }
+            this.data.chain = callbackResponse.cid
+            this.data.auth = {
+                actor: callbackResponse.sa,
+                permission: callbackResponse.sp,
+            }
+            this.data.requestKey = requestKey
+            this.data.privateKey = privateKey
+            this.data.signerKey =
+                callbackResponse.link_key && PublicKey.from(callbackResponse.link_key)
+            this.data.channelUrl = callbackResponse.link_ch
+            this.data.channelName = callbackResponse.link_name
 
-        // TODO: Response validation
-        // https://github.com/greymass/anchor-link/blob/508599dd3fb3420b60ee2fa470bf60ce9ddca1c5/src/link.ts#L379-L429
-        // Note: We can skip the resolution/broadcasting, happens in session transact
-
-        // TODO: Optional proof verification
-        // https://github.com/greymass/anchor-link/blob/508599dd3fb3420b60ee2fa470bf60ce9ddca1c5/src/link.ts#L513-L552
-
-        // TODO: Create session metadata from the response
-        // https://github.com/greymass/anchor-link/blob/508599dd3fb3420b60ee2fa470bf60ce9ddca1c5/src/utils.ts#L46-L68
-
-        // TODO: Establish the buoy session - do we need this or is it handled by wharf itself?
-        // https://github.com/greymass/anchor-link/blob/master/src/link.ts#L582-L611
-
-        // TODO: The request_key and other metadata needs to be persisted for session restoration
-        // https://github.com/greymass/anchor-link/blob/master/src/link.ts#L612
-
-        // Return the chain and permission level to use
-        return {
-            chain: Checksum256.from(payload.cid),
-            permissionLevel: PermissionLevel.from({
-                actor: payload.sa,
-                permission: payload.sp,
-            }),
+            return {
+                chain: Checksum256.from(callbackResponse.cid),
+                permissionLevel: PermissionLevel.from({
+                    actor: callbackResponse.sa,
+                    permission: callbackResponse.sp,
+                }),
+            }
+        } else {
+            throw new Error(
+                'Invalid response from Anchor, must contain link_ch, link_key, link_name and cid flags.'
+            )
         }
     }
+
     /**
      * Performs the wallet logic required to sign a transaction and return the signature.
      *
@@ -142,10 +172,142 @@ export class WalletPluginAnchor implements WalletPlugin {
      * @returns Promise<Signature>
      */
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    async sign(resolved: ResolvedSigningRequest, context: TransactContext): Promise<Signature> {
-        // Example response...
-        return Signature.from(
-            'SIG_K1_KfqBXGdSRnVgZbAXyL9hEYbAvrZjcaxUCenD7Z3aX6yzf6MEyc4Cy3ywToD4j3SKkzSg7L1uvRUirEPHwAwrbg5c9z27Z3'
-        )
+    sign(
+        resolved: ResolvedSigningRequest,
+        context: TransactContext
+    ): Promise<WalletPluginSignResponse> {
+        return this.handleSignatureRequest(resolved, context)
     }
+
+    private async handleSignatureRequest(
+        resolved: ResolvedSigningRequest,
+        context: TransactContext
+    ): Promise<WalletPluginSignResponse> {
+        if (!context.ui) {
+            throw new Error('No UI available')
+        }
+        context.ui.status('Preparing request for Anchor...')
+
+        // Set expiration time frames for the request
+        const expiration = resolved.transaction.expiration.toDate()
+        const now = new Date()
+        const expiresIn = Math.floor(expiration.getTime() - now.getTime())
+
+        // Tell Wharf we need to prompt the user with a QR code and a button
+        const promptPromise: Cancelable<PromptResponse> = context.ui.prompt({
+            title: 'Sign',
+            body: `Please open the Anchor Wallet on "${this.data.channelName}" to review and sign the transaction.`,
+            elements: [
+                {
+                    type: 'countdown',
+                    data: expiration.toISOString(),
+                },
+                {
+                    type: 'link',
+                    label: 'Sign manually or with another device',
+                    data: {
+                        href: String(resolved.request),
+                        label: 'Trigger Manually',
+                    },
+                },
+            ],
+        })
+
+        // Create a timer to test the external cancelation of the prompt, if defined
+        const timer = setTimeout(() => {
+            if (!context.ui) {
+                throw new Error('No UI defined')
+            }
+            promptPromise.cancel('The request expired, please try again.')
+        }, expiresIn)
+
+        // Clear the timeout if the UI throws (which generally means it closed)
+        promptPromise.catch(() => clearTimeout(timer))
+
+        // Set the expiration on the request LinkInfo
+        resolved.request.setInfoKey(
+            'link',
+            LinkInfo.from({
+                expiration,
+            })
+        )
+
+        // Assemble and wait for the callback from the wallet
+        const callback = setTransactionCallback(resolved, this.buoyUrl)
+        const callbackPromise = waitForCallback(callback)
+
+        // Assemble and send the payload to the wallet
+        const service = new URL(this.data.channelUrl).origin
+        const channel = new URL(this.data.channelUrl).pathname.substring(1)
+        const sealedMessage = sealMessage(
+            resolved.request.encode(true, false),
+            PrivateKey.from(this.data.privateKey),
+            PublicKey.from(this.data.signerKey)
+        )
+
+        send(Serializer.encode({object: sealedMessage}).array, {
+            service,
+            channel,
+        })
+
+        // Wait for either the callback or the prompt to resolve
+        const callbackResponse = await Promise.race([callbackPromise, promptPromise]).finally(
+            () => {
+                // Clear the automatic timeout once the race resolves
+                clearTimeout(timer)
+            }
+        )
+
+        if (isCallback(callbackResponse)) {
+            // If the callback was resolved, create a new request from the response
+            const resolvedRequest = await ResolvedSigningRequest.fromPayload(
+                callbackResponse,
+                context.esrOptions
+            )
+
+            const newRequest = await SigningRequest.create(
+                {
+                    transaction: resolvedRequest.transaction,
+                },
+                context.esrOptions
+            )
+
+            // Return the new request and the signatures from the wallet
+            return {
+                signatures: extractSignaturesFromCallback(callbackResponse),
+                request: newRequest,
+            }
+        }
+
+        // This shouldn't ever trigger, but just in case
+        throw new Error('The request was not completed.')
+    }
+}
+
+async function waitForCallback(callbackArgs): Promise<CallbackPayload> {
+    // Use the buoy-client to create a promise and wait for a response to the identity request
+    const callbackResponse = await receive({...callbackArgs, WebSocket})
+
+    if (!callbackResponse) {
+        // If the promise was rejected, throw an error
+        throw new Error(callbackResponse.rejected)
+    }
+
+    // If the promise was rejected, throw an error
+    if (typeof callbackResponse.rejected === 'string') {
+        throw new Error(callbackResponse.rejected)
+    }
+
+    // Process the identity request callback payload
+    const payload = JSON.parse(callbackResponse) as CallbackPayload
+
+    if (payload.sa === undefined || payload.sp === undefined || payload.cid === undefined) {
+        throw new Error('The request was cancelled from Anchor.')
+    }
+
+    return payload
+}
+
+function isCallback(object: any): object is CallbackPayload {
+    return 'tx' in object
 }
