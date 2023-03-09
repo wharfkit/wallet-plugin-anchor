@@ -2,11 +2,13 @@ import {receive, send} from '@greymass/buoy'
 import {
     AbstractWalletPlugin,
     CallbackPayload,
+    Cancelable,
     Canceled,
     Checksum256,
     LoginContext,
     PermissionLevel,
     PrivateKey,
+    PromptResponse,
     PublicKey,
     ResolvedSigningRequest,
     Serializer,
@@ -174,27 +176,25 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         resolved: ResolvedSigningRequest,
         context: TransactContext
     ): Promise<WalletPluginSignResponse> {
-        return new Promise((resolve, reject) => {
-            try {
-                this.handleSignatureRequest(resolved, context).then((response) => {
-                    resolve(response)
-                })
-            } catch (error) {
-                reject(error)
-            }
-        })
+        return this.handleSignatureRequest(resolved, context)
     }
 
-    private async handleSignatureRequest(resolved, context) {
+    private async handleSignatureRequest(
+        resolved: ResolvedSigningRequest,
+        context: TransactContext
+    ): Promise<WalletPluginSignResponse> {
         if (!context.ui) {
             throw new Error('No UI available')
         }
         context.ui.status('Preparing request for Anchor...')
 
+        // Set expiration time frames for the request
         const expiration = resolved.transaction.expiration.toDate()
+        const now = new Date()
+        const expiresIn = Math.floor(expiration.getTime() - now.getTime())
 
         // Tell Wharf we need to prompt the user with a QR code and a button
-        const promptPromise = context.ui.prompt({
+        const promptPromise: Cancelable<PromptResponse> = context.ui.prompt({
             title: 'Sign',
             body: `Please open the Anchor Wallet on "${this.data.channelName}" to review and sign the transaction.`,
             elements: [
@@ -213,57 +213,74 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             ],
         })
 
-        promptPromise.catch((error) => {
-            // Throw if what we caught was a cancelation
-            if (error instanceof Canceled) {
-                throw error
+        // Create a timer to test the external cancelation of the prompt, if defined
+        const timer = setTimeout(() => {
+            if (!context.ui) {
+                throw new Error('No UI defined')
             }
-        })
+            promptPromise.cancel('The request expired, please try again.')
+        }, expiresIn)
 
-        const {cancel: cancelPrompt} = promptPromise
+        // Clear the timeout if the UI throws (which generally means it closed)
+        promptPromise.catch(() => clearTimeout(timer))
 
+        // Set the expiration on the request LinkInfo
+        resolved.request.setInfoKey(
+            'link',
+            LinkInfo.from({
+                expiration,
+            })
+        )
+
+        // Assemble and wait for the callback from the wallet
         const callback = setTransactionCallback(resolved, this.buoyUrl)
+        const callbackPromise = waitForCallback(callback)
 
-        const info = LinkInfo.from({
-            expiration,
-        })
-
-        resolved.request.setInfoKey('link', info)
-
+        // Assemble and send the payload to the wallet
+        const service = new URL(this.data.channelUrl).origin
+        const channel = new URL(this.data.channelUrl).pathname.substring(1)
         const sealedMessage = sealMessage(
             resolved.request.encode(true, false),
             PrivateKey.from(this.data.privateKey),
             PublicKey.from(this.data.signerKey)
         )
 
-        const service = new URL(this.data.channelUrl).origin
-        const channel = new URL(this.data.channelUrl).pathname.substring(1)
-
         send(Serializer.encode({object: sealedMessage}).array, {
             service,
             channel,
         })
 
-        const callbackResponse = await waitForCallback(callback)
-
-        const resolvedRequest = await ResolvedSigningRequest.fromPayload(
-            callbackResponse,
-            context.esrOptions
+        // Wait for either the callback or the prompt to resolve
+        const callbackResponse = await Promise.race([callbackPromise, promptPromise]).finally(
+            () => {
+                // Clear the automatic timeout once the race resolves
+                clearTimeout(timer)
+            }
         )
 
-        const newRequest = await SigningRequest.create(
-            {
-                transaction: resolvedRequest.transaction,
-            },
-            context.esrOptions
-        )
+        if (isCallback(callbackResponse)) {
+            // If the callback was resolved, create a new request from the response
+            const resolvedRequest = await ResolvedSigningRequest.fromPayload(
+                callbackResponse,
+                context.esrOptions
+            )
 
-        cancelPrompt()
+            const newRequest = await SigningRequest.create(
+                {
+                    transaction: resolvedRequest.transaction,
+                },
+                context.esrOptions
+            )
 
-        return {
-            signatures: extractSignaturesFromCallback(callbackResponse),
-            request: newRequest,
+            // Return the new request and the signatures from the wallet
+            return {
+                signatures: extractSignaturesFromCallback(callbackResponse),
+                request: newRequest,
+            }
         }
+
+        // This shouldn't ever trigger, but just in case
+        throw new Error('The request was not completed.')
     }
 }
 
@@ -285,8 +302,12 @@ async function waitForCallback(callbackArgs): Promise<CallbackPayload> {
     const payload = JSON.parse(callbackResponse) as CallbackPayload
 
     if (payload.sa === undefined || payload.sp === undefined || payload.cid === undefined) {
-        throw new Error('Invalid response from Anchor')
+        throw new Error('The request was cancelled from Anchor.')
     }
 
     return payload
+}
+
+function isCallback(object: any): object is CallbackPayload {
+    return 'tx' in object
 }
