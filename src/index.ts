@@ -34,6 +34,7 @@ import {extractSignaturesFromCallback} from './esr'
 
 interface WalletPluginOptions {
     buoyUrl?: string
+    buoyWs?: WebSocket
 }
 export class WalletPluginAnchor extends AbstractWalletPlugin {
     chain: Checksum256 | undefined
@@ -44,11 +45,13 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
     channelUrl: string | undefined
     channelName: string | undefined
     buoyUrl: string
+    buoyWs: WebSocket | undefined
 
     constructor(options?: WalletPluginOptions) {
         super()
 
         this.buoyUrl = options?.buoyUrl || 'https://cb.anchor.link'
+        this.buoyWs = options?.buoyWs
     }
 
     public get id(): string {
@@ -128,7 +131,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         })
 
         // Await a promise race to wait for either the wallet response or the cancel
-        const callbackResponse: CallbackPayload = await waitForCallback(callback)
+        const callbackResponse: CallbackPayload = await waitForCallback(callback, this.buoyWs)
 
         if (
             callbackResponse.link_ch &&
@@ -234,7 +237,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
 
         // Assemble and wait for the callback from the wallet
         const callback = setTransactionCallback(resolved, this.buoyUrl)
-        const callbackPromise = waitForCallback(callback)
+        const callbackPromise = waitForCallback(callback, this.buoyWs)
 
         // Assemble and send the payload to the wallet
         const service = new URL(this.data.channelUrl).origin
@@ -284,9 +287,9 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
     }
 }
 
-async function waitForCallback(callbackArgs): Promise<CallbackPayload> {
+async function waitForCallback(callbackArgs, buoyWs): Promise<CallbackPayload> {
     // Use the buoy-client to create a promise and wait for a response to the identity request
-    const callbackResponse = await receive({...callbackArgs, WebSocket})
+    const callbackResponse = await receive({...callbackArgs, WebSocket: buoyWs || WebSocket})
 
     if (!callbackResponse) {
         // If the promise was rejected, throw an error
