@@ -3,20 +3,13 @@ import {CallbackPayload, Signature} from '@wharfkit/session'
 export function extractSignaturesFromCallback(payload: CallbackPayload): Signature[] {
     const signatures: Signature[] = []
 
-    if (payload.sig) {
-        signatures.push(Signature.from(payload.sig))
-    }
-
     let index = 0
+    let sig: string | undefined = payload.sig
 
-    while (true) {
-        const sig = payload[`sig${index}`]
-
-        if (!sig) {
-            break
-        }
-
+    while (sig) {
         signatures.push(Signature.from(sig))
+
+        sig = payload[`sig${index}`]
 
         index++
     }
