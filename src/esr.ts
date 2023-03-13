@@ -7,8 +7,18 @@ export function extractSignaturesFromCallback(payload: CallbackPayload): Signatu
         signatures.push(Signature.from(payload.sig))
     }
 
-    while (payload[`sig${signatures.length}`]) {
-        signatures.push(Signature.from(payload[`sig${signatures.length}`]!))
+    let index = 0
+
+    while (true) {
+        const sig = payload[`sig${index}`]
+
+        if (!sig) {
+            break
+        }
+
+        signatures.push(Signature.from(sig))
+
+        index++
     }
 
     return signatures
