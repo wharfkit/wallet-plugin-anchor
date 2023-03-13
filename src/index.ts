@@ -141,11 +141,6 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         ) {
             verifyLoginCallbackResponse(callbackResponse, context)
 
-            this.data.chain = callbackResponse.cid
-            this.data.auth = {
-                actor: callbackResponse.sa,
-                permission: callbackResponse.sp,
-            }
             this.data.requestKey = requestKey
             this.data.privateKey = privateKey
             this.data.signerKey =
