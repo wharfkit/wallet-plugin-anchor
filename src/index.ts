@@ -191,6 +191,9 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         const now = new Date()
         const expiresIn = Math.floor(expiration.getTime() - now.getTime())
 
+        // Add the callback to the request
+        const callback = setTransactionCallback(resolved, this.buoyUrl)
+
         // Tell Wharf we need to prompt the user with a QR code and a button
         const promptPromise: Cancelable<PromptResponse> = context.ui.prompt({
             title: 'Sign',
@@ -204,7 +207,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                     type: 'link',
                     label: 'Sign manually or with another device',
                     data: {
-                        href: String(resolved.request),
+                        href: resolved.request.encode(true, false),
                         label: 'Trigger Manually',
                     },
                 },
@@ -230,8 +233,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             })
         )
 
-        // Assemble and wait for the callback from the wallet
-        const callback = setTransactionCallback(resolved, this.buoyUrl)
+        // Wait for the callback from the wallet
         const callbackPromise = waitForCallback(callback, this.buoyWs)
 
         // Assemble and send the payload to the wallet
