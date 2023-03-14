@@ -30,7 +30,7 @@ import {
 } from './anchor'
 import {LinkInfo} from './anchor-types'
 
-import {extractSignaturesFromCallback} from './esr'
+import {extractSignaturesFromCallback, isCallback} from './esr'
 
 interface WalletPluginOptions {
     buoyUrl?: string
@@ -104,7 +104,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             this.buoyUrl
         )
         // Tell Wharf we need to prompt the user with a QR code and a button
-        const promptResonse = context.ui?.prompt({
+        const promptResponse = context.ui?.prompt({
             title: 'Login with Anchor',
             body: 'Scan the QR-code with Anchor on another device or use the button to open it here.',
             elements: [
@@ -123,7 +123,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             ],
         })
 
-        promptResonse.catch((error) => {
+        promptResponse.catch((error) => {
             // Throw if what we caught was a cancelation
             if (error instanceof Canceled) {
                 throw error
@@ -148,6 +148,9 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             this.data.channelUrl = callbackResponse.link_ch
             this.data.channelName = callbackResponse.link_name
 
+            // Close the prompt
+            promptResponse.cancel('Signatures received.')
+
             return {
                 chain: Checksum256.from(callbackResponse.cid),
                 permissionLevel: PermissionLevel.from({
@@ -156,6 +159,9 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                 }),
             }
         } else {
+            // Close the prompt
+            promptResponse.cancel('Invalid response from Anchor.')
+
             throw new Error(
                 'Invalid response from Anchor, must contain link_ch, link_key, link_name and cid flags.'
             )
@@ -258,7 +264,11 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             }
         )
 
-        if (isCallback(callbackResponse)) {
+        const wasSuccessful =
+            isCallback(callbackResponse) &&
+            extractSignaturesFromCallback(callbackResponse).length > 0
+
+        if (wasSuccessful) {
             // If the callback was resolved, create a new request from the response
             const resolvedRequest = await ResolvedSigningRequest.fromPayload(
                 callbackResponse,
@@ -272,6 +282,8 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                 context.esrOptions
             )
 
+            promptPromise.cancel('Signatures received.')
+
             // Return the new request and the signatures from the wallet
             return {
                 signatures: extractSignaturesFromCallback(callbackResponse),
@@ -279,8 +291,12 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             }
         }
 
+        const errorString = 'The request was not completed.'
+
+        promptPromise.cancel(errorString)
+
         // This shouldn't ever trigger, but just in case
-        throw new Error('The request was not completed.')
+        throw new Error(errorString)
     }
 }
 
@@ -306,8 +322,4 @@ async function waitForCallback(callbackArgs, buoyWs): Promise<CallbackPayload> {
     }
 
     return payload
-}
-
-function isCallback(object: any): object is CallbackPayload {
-    return 'tx' in object
 }

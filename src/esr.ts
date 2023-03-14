@@ -16,3 +16,7 @@ export function extractSignaturesFromCallback(payload: CallbackPayload): Signatu
 
     return signatures
 }
+
+export function isCallback(object: any): object is CallbackPayload {
+    return 'tx' in object
+}
