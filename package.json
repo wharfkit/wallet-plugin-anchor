@@ -18,7 +18,8 @@
     "dependencies": {
         "@greymass/buoy": "^1.0.3",
         "@greymass/miniaes": "^1.0.0",
-        "isomorphic-ws": "^5.0.0"
+        "isomorphic-ws": "^5.0.0",
+        "ws": "^8.13.0"
     },
     "peerDependencies": {
         "@wharfkit/session": "^0.3.1"
