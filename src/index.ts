@@ -148,9 +148,6 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             this.data.channelUrl = callbackResponse.link_ch
             this.data.channelName = callbackResponse.link_name
 
-            // Close the prompt
-            promptResponse.cancel('Signatures received.')
-
             return {
                 chain: Checksum256.from(callbackResponse.cid),
                 permissionLevel: PermissionLevel.from({
@@ -281,8 +278,6 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                 },
                 context.esrOptions
             )
-
-            promptPromise.cancel('Signatures received.')
 
             // Return the new request and the signatures from the wallet
             return {
