@@ -96,7 +96,14 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
     }
 
     async handleLogin(context: LoginContext): Promise<WalletPluginLoginResponse> {
-        context.ui?.status('Preparing request for Anchor...')
+        if (!context.ui) {
+            throw new Error('No UI available')
+        }
+
+        // Retrieve translation helper from the UI, passing the app ID
+        const t = context.ui.getTranslate(this.id)
+
+        context.ui?.status(t('login.preparing', {default: 'Preparing request for Anchor...'}))
 
         // Create the identity request to be presented to the user
         const {callback, request, requestKey, privateKey} = await createIdentityRequest(
@@ -105,8 +112,11 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         )
         // Tell Wharf we need to prompt the user with a QR code and a button
         const promptResponse = context.ui?.prompt({
-            title: 'Login with Anchor',
-            body: 'Scan the QR-code with Anchor on another device or use the button to open it here.',
+            title: t('login.preparing', {default: 'Login with Anchor'}),
+            body: t('login.preparing', {
+                default:
+                    'Scan the QR-code with Anchor on another device or use the button to open it here.',
+            }),
             elements: [
                 {
                     type: 'qr',
@@ -114,10 +124,10 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                 },
                 {
                     type: 'link',
-                    label: 'Open Anchor',
+                    label: t('login.link', {default: 'Open Anchor'}),
                     data: {
                         href: String(request),
-                        label: 'Open Anchor',
+                        label: t('login.link', {default: 'Open Anchor'}),
                     },
                 },
             ],
@@ -131,7 +141,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         })
 
         // Await a promise race to wait for either the wallet response or the cancel
-        const callbackResponse: CallbackPayload = await waitForCallback(callback, this.buoyWs)
+        const callbackResponse: CallbackPayload = await waitForCallback(callback, this.buoyWs, t)
 
         if (
             callbackResponse.link_ch &&
@@ -160,7 +170,10 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             promptResponse.cancel('Invalid response from Anchor.')
 
             throw new Error(
-                'Invalid response from Anchor, must contain link_ch, link_key, link_name and cid flags.'
+                t('error.invalid_response', {
+                    default:
+                        'Invalid response from Anchor, must contain link_ch, link_key, link_name and cid flags.',
+                })
             )
         }
     }
@@ -187,7 +200,11 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         if (!context.ui) {
             throw new Error('No UI available')
         }
-        context.ui.status('Preparing request for Anchor...')
+
+        // Retrieve translation helper from the UI, passing the app ID
+        const t = context.ui.getTranslate(this.id)
+
+        context.ui?.status(t('shared.preparing', {default: 'Preparing request for Anchor...'}))
 
         // Set expiration time frames for the request
         const expiration = resolved.transaction.expiration.toDate()
@@ -199,8 +216,11 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
 
         // Tell Wharf we need to prompt the user with a QR code and a button
         const promptPromise: Cancelable<PromptResponse> = context.ui.prompt({
-            title: 'Sign',
-            body: `Please open the Anchor Wallet on "${this.data.channelName}" to review and sign the transaction.`,
+            title: t('transact.title', {default: 'Sign'}),
+            body: t('shared.body', {
+                channelName: this.data.channelName,
+                default: `Please open the Anchor Wallet on "${this.data.channelName}" to review and sign the transaction.`,
+            }),
             elements: [
                 {
                     type: 'countdown',
@@ -208,10 +228,10 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                 },
                 {
                     type: 'link',
-                    label: 'Sign manually or with another device',
+                    label: t('shared.label', {default: 'Sign manually or with another device'}),
                     data: {
-                        href: resolved.request.encode(true, false, 'esr-anchor'),
-                        label: 'Trigger Manually',
+                        href: resolved.request.encode(true, false),
+                        label: t('shared.link', {default: 'Trigger Manually'}),
                     },
                 },
             ],
@@ -220,9 +240,11 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         // Create a timer to test the external cancelation of the prompt, if defined
         const timer = setTimeout(() => {
             if (!context.ui) {
-                throw new Error('No UI defined')
+                throw new Error('No UI available')
             }
-            promptPromise.cancel('The request expired, please try again.')
+            promptPromise.cancel(
+                t('error.expired', {default: 'The request expired, please try again.'})
+            )
         }, expiresIn)
 
         // Clear the timeout if the UI throws (which generally means it closed)
@@ -237,13 +259,13 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         )
 
         // Wait for the callback from the wallet
-        const callbackPromise = waitForCallback(callback, this.buoyWs)
+        const callbackPromise = waitForCallback(callback, this.buoyWs, t)
 
         // Assemble and send the payload to the wallet
         const service = new URL(this.data.channelUrl).origin
         const channel = new URL(this.data.channelUrl).pathname.substring(1)
         const sealedMessage = sealMessage(
-            resolved.request.encode(true, false, 'esr-anchor'),
+            resolved.request.encode(true, false),
             PrivateKey.from(this.data.privateKey),
             PublicKey.from(this.data.signerKey)
         )
@@ -286,7 +308,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             }
         }
 
-        const errorString = 'The request was not completed.'
+        const errorString = t('error.not_completed', {default: 'The request was not completed.'})
 
         promptPromise.cancel(errorString)
 
@@ -295,7 +317,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
     }
 }
 
-async function waitForCallback(callbackArgs, buoyWs): Promise<CallbackPayload> {
+async function waitForCallback(callbackArgs, buoyWs, t): Promise<CallbackPayload> {
     // Use the buoy-client to create a promise and wait for a response to the identity request
     const callbackResponse = await receive({...callbackArgs, WebSocket: buoyWs || WebSocket})
 
@@ -313,7 +335,7 @@ async function waitForCallback(callbackArgs, buoyWs): Promise<CallbackPayload> {
     const payload = JSON.parse(callbackResponse) as CallbackPayload
 
     if (payload.sa === undefined || payload.sp === undefined || payload.cid === undefined) {
-        throw new Error('The request was cancelled from Anchor.')
+        throw new Error(t('error.cancelled', {default: 'The request was cancelled from Anchor.'}))
     }
 
     return payload
