@@ -16,6 +16,10 @@ export class MockUserInterface extends AbstractUserInterface implements UserInte
     readonly logging = false
     public messages: string[] = []
 
+    translate(key) {
+        return key
+    }
+
     log(message: string) {
         this.messages.push(message)
         if (this.logging) {
