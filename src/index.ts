@@ -32,6 +32,8 @@ import {LinkInfo} from './anchor-types'
 
 import {extractSignaturesFromCallback, isCallback} from './esr'
 
+import defaultTranslations from './translations'
+
 interface WalletPluginOptions {
     buoyUrl?: string
     buoyWs?: WebSocket
@@ -47,15 +49,21 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
     buoyUrl: string
     buoyWs: WebSocket | undefined
 
+    /**
+     * The unique identifier for the wallet plugin.
+     */
+    id = 'anchor'
+
+    /**
+     * The translations for this plugin
+     */
+    translations = defaultTranslations
+
     constructor(options?: WalletPluginOptions) {
         super()
 
         this.buoyUrl = options?.buoyUrl || 'https://cb.anchor.link'
         this.buoyWs = options?.buoyWs
-    }
-
-    public get id(): string {
-        return 'anchor'
     }
 
     /**
