@@ -1,0 +1,21 @@
+{
+    "shared": {
+        "preparing": "Preparing request for Anchor..."
+    },
+    "login": {
+        "title": "Login with Anchor",
+        "body": "Scan the QR-code with Anchor on another device or use the button to open it here.",
+        "link": "Open Anchor"
+    },
+    "transact": {
+        "title": "Sign transaction with Anchor",
+        "body": "Please open the Anchor Wallet on \"{{channelName}}\" to review and sign the transaction.",
+        "label": "Sign manually or with another device",
+        "link": "Trigger Manually"
+    },
+    "error": {
+        "expired": "The request expired, please try again.",
+        "invalid_response": "Invalid response from Anchor, must contain link_ch, link_key, link_name and cid flags.",
+        "not_completed": "The request was not completed."
+    }
+}

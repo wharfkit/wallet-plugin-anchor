@@ -10,11 +10,6 @@ import {mockSessionKitOptions} from '$test/utils/mock-session'
 import {mockCallbackPayload} from '$test/utils/mock-esr'
 import {mockChainId} from '$test/utils/mock-config'
 
-const mockChainDefinition = {
-    id: '73e4385a2708e6d7048834fbc1079f2fabb17b3c125b146af438971e90716c4d',
-    url: 'https://jungle4.greymass.com',
-}
-
 const mockPermissionLevel = PermissionLevel.from('wharfkit1115@test')
 
 suite('wallet plugin', function () {

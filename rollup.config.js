@@ -4,6 +4,7 @@ import typescript from '@rollup/plugin-typescript'
 import replace from '@rollup/plugin-replace'
 
 import pkg from './package.json'
+import json from '@rollup/plugin-json'
 
 const replaceVersion = replace({
     preventAssignment: true,
@@ -35,7 +36,7 @@ export default [
             sourcemap: true,
             exports: 'named',
         },
-        plugins: [replaceVersion, typescript({target: 'es6'})],
+        plugins: [replaceVersion, typescript({target: 'es6'}), json()],
         external,
     },
     {
@@ -46,7 +47,7 @@ export default [
             format: 'esm',
             sourcemap: true,
         },
-        plugins: [replaceVersion, typescript({target: 'es2020'})],
+        plugins: [replaceVersion, typescript({target: 'es2020'}), json()],
         external,
     },
     {
