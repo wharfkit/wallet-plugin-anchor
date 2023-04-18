@@ -13,6 +13,7 @@ import {
     Transaction,
     WalletPluginConfig,
     WalletPluginData,
+    WalletPluginMetadata,
     WalletPluginSignResponse,
 } from '@wharfkit/session'
 import {mockChainDefinition, mockPermissionLevel, mockPrivateKey} from './mock-config'
@@ -28,10 +29,10 @@ export function makeAnchorWallet() {
 }
 
 export class MockWalletPluginConfigs extends AbstractWalletPlugin {
-    readonly metadata = {
+    readonly metadata = WalletPluginMetadata.from({
         name: 'Mock Wallet Plugin',
         description: 'A mock wallet plugin for testing chain selection',
-    }
+    })
     testModify = false
     config: WalletPluginConfig
     constructor(config?: WalletPluginConfig, initialData: WalletPluginData = {}) {
