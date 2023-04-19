@@ -241,7 +241,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                     type: 'link',
                     label: t('shared.label', {default: 'Sign manually or with another device'}),
                     data: {
-                        href: resolved.request.encode(true, false, 'esr-anchor'),
+                        href: resolved.request.encode(true, false, 'esr:'),
                         label: t('shared.link', {default: 'Trigger Manually'}),
                     },
                 },
@@ -276,7 +276,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         const service = new URL(this.data.channelUrl).origin
         const channel = new URL(this.data.channelUrl).pathname.substring(1)
         const sealedMessage = sealMessage(
-            resolved.request.encode(true, false, 'esr-anchor'),
+            resolved.request.encode(true, false, 'esr:'),
             PrivateKey.from(this.data.privateKey),
             PublicKey.from(this.data.signerKey)
         )
