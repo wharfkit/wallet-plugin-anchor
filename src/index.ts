@@ -139,6 +139,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                     data: {
                         href: String(request),
                         label: t('login.link', {default: 'Open Anchor'}),
+                        variant: 'primary',
                     },
                 },
             ],
