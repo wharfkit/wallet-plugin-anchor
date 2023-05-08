@@ -131,13 +131,13 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             elements: [
                 {
                     type: 'qr',
-                    data: String(request),
+                    data: request.encode(true, false, 'esr:'),
                 },
                 {
                     type: 'link',
                     label: t('login.link', {default: 'Open Anchor'}),
                     data: {
-                        href: String(request),
+                        href: request.encode(true, false, 'esr:'),
                         label: t('login.link', {default: 'Open Anchor'}),
                     },
                 },
