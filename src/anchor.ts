@@ -56,16 +56,19 @@ export async function createIdentityRequest(
     const callbackChannel = prepareCallbackChannel(buoyUrl)
 
     // Create the request
-    const request = SigningRequest.identity({
-        callback: prepareCallback(callbackChannel),
-        scope: String(context.appName),
-        chainId: isMultiChain ? null : context.chain?.id,
-        chainIds: isMultiChain ? context.chains.map((c) => c.id) : undefined,
-        info: {
-            link: createInfo,
+    const request = SigningRequest.identity(
+        {
+            callback: prepareCallback(callbackChannel),
             scope: String(context.appName),
+            chainId: isMultiChain ? null : context.chain?.id,
+            chainIds: isMultiChain ? context.chains.map((c) => c.id) : undefined,
+            info: {
+                link: createInfo,
+                scope: String(context.appName),
+            },
         },
-    })
+        context.esrOptions
+    )
 
     // Return the request and the callback data
     return {
