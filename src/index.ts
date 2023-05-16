@@ -114,8 +114,6 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         // Retrieve translation helper from the UI, passing the app ID
         const t = context.ui.getTranslate(this.id)
 
-        context.ui?.status(t('login.preparing', {default: 'Preparing request for Anchor...'}))
-
         // Create the identity request to be presented to the user
         const {callback, request, requestKey, privateKey} = await createIdentityRequest(
             context,
@@ -123,10 +121,10 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         )
         // Tell Wharf we need to prompt the user with a QR code and a button
         const promptResponse = context.ui?.prompt({
-            title: t('login.preparing', {default: 'Login with Anchor'}),
-            body: t('login.preparing', {
+            title: t('login.title', {default: 'Connect with Anchor'}),
+            body: t('login.body', {
                 default:
-                    'Scan the QR-code with Anchor on another device or use the button to open it here.',
+                    'Scan with Anchor on your mobile device or click the button below to open on this device.',
             }),
             elements: [
                 {
@@ -135,10 +133,10 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                 },
                 {
                     type: 'link',
-                    label: t('login.link', {default: 'Open Anchor'}),
+                    label: t('login.link', {default: 'Launch Anchor'}),
                     data: {
                         href: request.encode(true, false, 'esr:'),
-                        label: t('login.link', {default: 'Open Anchor'}),
+                        label: t('login.link', {default: 'Launch Anchor'}),
                         variant: 'primary',
                     },
                 },
@@ -216,8 +214,6 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         // Retrieve translation helper from the UI, passing the app ID
         const t = context.ui.getTranslate(this.id)
 
-        context.ui?.status(t('shared.preparing', {default: 'Preparing request for Anchor...'}))
-
         // Set expiration time frames for the request
         const expiration = resolved.transaction.expiration.toDate()
         const now = new Date()
@@ -228,22 +224,27 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
 
         // Tell Wharf we need to prompt the user with a QR code and a button
         const promptPromise: Cancelable<PromptResponse> = context.ui.prompt({
-            title: t('transact.title', {default: 'Sign'}),
-            body: t('shared.body', {
+            title: t('transact.title', {default: 'Complete using Anchor'}),
+            body: t('transact.body', {
                 channelName: this.data.channelName,
-                default: `Please open the Anchor Wallet on "${this.data.channelName}" to review and sign the transaction.`,
+                default: `Please open your Anchor Wallet on "${this.data.channelName}" to review and approve this transaction.`,
             }),
             elements: [
                 {
                     type: 'countdown',
-                    data: expiration.toISOString(),
+                    data: {
+                        label: t('transact.await', {default: 'Waiting for response from Anchor'}),
+                        end: expiration.toISOString(),
+                    },
                 },
                 {
                     type: 'link',
-                    label: t('shared.label', {default: 'Sign manually or with another device'}),
+                    label: t('transact.label', {default: 'Sign manually or with another device'}),
                     data: {
                         href: resolved.request.encode(true, false, 'esr:'),
-                        label: t('shared.link', {default: 'Trigger Manually'}),
+                        label: t('transact.label', {
+                            default: 'Sign manually or with another device',
+                        }),
                     },
                 },
             ],
