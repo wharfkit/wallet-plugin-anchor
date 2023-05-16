@@ -1,7 +1,4 @@
 {
-    "shared": {
-        "preparing": "Preparing request for Anchor..."
-    },
     "login": {
         "title": "Connect with Anchor",
         "body": "Scan with Anchor on your mobile device or click the button below to open on this device.",
