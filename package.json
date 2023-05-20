@@ -13,8 +13,7 @@
         "src/*"
     ],
     "scripts": {
-        "prepare": "make",
-        "prepublishOnly":
+        "prepare": "make"
     },
     "dependencies": {
         "@greymass/buoy": "^1.0.3",
