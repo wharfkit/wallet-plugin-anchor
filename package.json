@@ -37,7 +37,7 @@
         "@types/node": "^18.7.18",
         "@typescript-eslint/eslint-plugin": "^5.20.0",
         "@typescript-eslint/parser": "^5.20.0",
-        "@wharfkit/session": "^0.4.0",
+        "@wharfkit/session": "^0.5.0",
         "@wharfkit/wallet-plugin-privatekey": "^0.3.0",
         "chai": "^4.3.4",
         "eosio-signing-request": "^2.5.2",
