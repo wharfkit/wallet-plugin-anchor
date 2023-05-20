@@ -13,7 +13,8 @@
         "src/*"
     ],
     "scripts": {
-        "prepare": "make"
+        "prepare": "make",
+        "prepublishOnly":
     },
     "dependencies": {
         "@greymass/buoy": "^1.0.3",
@@ -22,7 +23,7 @@
         "ws": "^8.13.0"
     },
     "peerDependencies": {
-        "@wharfkit/session": "^0.4.0"
+        "@wharfkit/session": "^0.5.0"
     },
     "devDependencies": {
         "@rollup/plugin-alias": "^3.1.4",
