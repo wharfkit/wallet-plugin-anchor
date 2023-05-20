@@ -307,17 +307,10 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                 context.esrOptions
             )
 
-            const newRequest = await SigningRequest.create(
-                {
-                    transaction: resolvedRequest.transaction,
-                },
-                context.esrOptions
-            )
-
             // Return the new request and the signatures from the wallet
             return {
                 signatures: extractSignaturesFromCallback(callbackResponse),
-                request: newRequest,
+                resolved: resolvedRequest,
             }
         }
 
