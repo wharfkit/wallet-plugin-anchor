@@ -1,1 +1,7 @@
-{}
+{
+    "login": {
+        "link": "启动Anchor",
+        "body": "在您的设备上使用Anchor扫描或者点击下方按钮打开。",
+        "title": "连接Anchor"
+    }
+}
