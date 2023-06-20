@@ -76,7 +76,7 @@ export class MockWalletPluginConfigs extends AbstractWalletPlugin {
             const privateKey = PrivateKey.from(this.data.privateKey)
             const signature = privateKey.signDigest(digest)
             return {
-                request: request,
+                resolved: modifiedResolved,
                 signatures: [signature],
             }
         }
