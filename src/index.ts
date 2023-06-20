@@ -12,7 +12,6 @@ import {
     PublicKey,
     ResolvedSigningRequest,
     Serializer,
-    SigningRequest,
     TransactContext,
     WalletPluginConfig,
     WalletPluginLoginResponse,
