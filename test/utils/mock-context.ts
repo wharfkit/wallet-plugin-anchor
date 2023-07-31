@@ -16,7 +16,7 @@ import zlib from 'pako'
 
 import {mockChainDefinition, mockUrl} from './mock-config'
 import {mockFetch} from '$test/utils/mock-fetch'
-import {mockSessionArgs, mockSessionOptions} from './mock-session'
+import {mockSessionArgs, mockSessionOptions} from '@wharfkit/mock-data'
 import {mockLoginHook} from './mock-hook'
 import {makeWallet} from './mock-wallet'
 import {MockUserInterface} from './mock-userinterface'
@@ -29,7 +29,7 @@ export const session = new Session(mockSessionArgs, mockSessionOptions)
 export const mockAbiProvider = new ABICache(client)
 
 export const mockTransactContextOptions: TransactContextOptions = {
-    abiProvider: mockAbiProvider,
+    abiCache: mockAbiProvider,
     chain: ChainDefinition.from(mockChainDefinition),
     client,
     createRequest: async (args: TransactArgs): Promise<SigningRequest> =>
@@ -41,7 +41,7 @@ export const mockTransactContextOptions: TransactContextOptions = {
 const wallet = makeWallet()
 
 export const mockLoginContext: LoginContext = {
-    appName: Name.from('mock'),
+    appName: 'mock',
     fetch: mockFetch, // Required for unit tests
     ui: new MockUserInterface(),
     walletPlugins: [wallet],

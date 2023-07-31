@@ -10,7 +10,7 @@ lib: ${SRC_FILES} package.json tsconfig.json node_modules rollup.config.js
 
 .PHONY: test
 test: node_modules
-	@TS_NODE_PROJECT='./test/tsconfig.json' \
+	@TS_NODE_PROJECT='./test/tsconfig.json' MOCK_DIR='./test/data' \
 		${BIN}/mocha ${MOCHA_OPTS} ${TEST_FILES} --grep '$(grep)'
 
 build/coverage: ${SRC_FILES} ${TEST_FILES} node_modules
@@ -24,7 +24,7 @@ coverage: build/coverage
 
 .PHONY: ci-test
 ci-test: node_modules
-	@TS_NODE_PROJECT='./test/tsconfig.json' \
+	@TS_NODE_PROJECT='./test/tsconfig.json' MOCK_DIR='./test/data' \
 		${BIN}/nyc ${NYC_OPTS} --reporter=text \
 		${BIN}/mocha ${MOCHA_OPTS} -R list ${TEST_FILES}
 

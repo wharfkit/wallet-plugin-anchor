@@ -2,15 +2,15 @@ import {expect} from 'chai'
 import {CallbackPayload, LoginContext, PrivateKey, SigningRequest, UInt64} from '@wharfkit/session'
 import {
     createIdentityRequest,
-    setTransactionCallback,
     sealMessage,
+    setTransactionCallback,
     verifyLoginCallbackResponse,
 } from 'src/anchor'
 
 import {zlib} from 'pako'
 
 import {mockLoginContext} from '../utils/mock-context'
-import {mockCallbackPayload, makeMockResolvedSigningRequest} from '$test/utils/mock-esr'
+import {makeMockResolvedSigningRequest, mockCallbackPayload} from '$test/utils/mock-esr'
 import {mockChainId2, mockPrivateKey, mockSignature1} from '$test/utils/mock-config'
 
 suite('anchor', () => {

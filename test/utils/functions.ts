@@ -1,5 +1,5 @@
 import {Action, AnyAction, Transaction} from '@wharfkit/session'
-import {SigningRequest} from 'eosio-signing-request'
+import {SigningRequest} from '@wharfkit/signing-request'
 
 /**
  * Prepend an action to the end of the array of actions in a SigningRequest.

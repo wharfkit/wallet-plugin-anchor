@@ -6,7 +6,7 @@ import * as buoy from '@greymass/buoy'
 
 chai.use(sinonChai)
 
-import {mockSessionKitOptions} from '$test/utils/mock-session'
+import {mockSessionKitArgs, mockSessionKitOptions} from '@wharfkit/mock-data'
 import {mockCallbackPayload} from '$test/utils/mock-esr'
 import {mockChainId} from '$test/utils/mock-config'
 
@@ -21,7 +21,7 @@ suite('wallet plugin', function () {
         sinon.stub(buoy, 'receive').resolves(JSON.stringify(mockCallbackPayload))
         sinon.stub(buoy, 'send')
 
-        const kit = new SessionKit(mockSessionKitOptions)
+        const kit = new SessionKit(mockSessionKitArgs, mockSessionKitOptions)
         const {session} = await kit.login({
             chain: mockChainId,
             permissionLevel: mockPermissionLevel,
