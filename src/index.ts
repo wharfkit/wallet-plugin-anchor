@@ -221,6 +221,9 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         // Add the callback to the request
         const callback = setTransactionCallback(resolved, this.buoyUrl)
 
+        // Create a new signing request based on the existing resolved request
+        const modifiedRequest = await context.createRequest({transaction: resolved.transaction})
+
         // Tell Wharf we need to prompt the user with a QR code and a button
         const promptPromise: Cancelable<PromptResponse> = context.ui.prompt({
             title: t('transact.title', {default: 'Complete using Anchor'}),
@@ -240,7 +243,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                     type: 'link',
                     label: t('transact.label', {default: 'Sign manually or with another device'}),
                     data: {
-                        href: resolved.request.encode(true, false, 'esr:'),
+                        href: modifiedRequest.encode(true, false, 'esr:'),
                         label: t('transact.label', {
                             default: 'Sign manually or with another device',
                         }),
@@ -263,7 +266,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         promptPromise.catch(() => clearTimeout(timer))
 
         // Set the expiration on the request LinkInfo
-        resolved.request.setInfoKey(
+        modifiedRequest.setInfoKey(
             'link',
             LinkInfo.from({
                 expiration,
@@ -277,7 +280,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         const service = new URL(this.data.channelUrl).origin
         const channel = new URL(this.data.channelUrl).pathname.substring(1)
         const sealedMessage = sealMessage(
-            resolved.request.encode(true, false, 'esr:'),
+            modifiedRequest.encode(true, false, 'esr:'),
             PrivateKey.from(this.data.privateKey),
             PublicKey.from(this.data.signerKey)
         )
