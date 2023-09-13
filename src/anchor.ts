@@ -86,10 +86,10 @@ export async function createIdentityRequest(
  * @returns
  */
 
-export function setTransactionCallback(resolved: ResolvedSigningRequest, buoyUrl) {
+export function setTransactionCallback(resolved: SigningRequest, buoyUrl) {
     const callback = prepareCallbackChannel(buoyUrl)
 
-    resolved.request.setCallback(`${callback.service}/${callback.channel}`, true)
+    request.setCallback(`${callback.service}/${callback.channel}`, true)
 
     return callback
 }

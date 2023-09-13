@@ -218,11 +218,11 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         const now = new Date()
         const expiresIn = Math.floor(expiration.getTime() - now.getTime())
 
-        // Add the callback to the request
-        const callback = setTransactionCallback(resolved, this.buoyUrl)
-
         // Create a new signing request based on the existing resolved request
         const modifiedRequest = await context.createRequest({transaction: resolved.transaction})
+
+        // Add the callback to the request
+        const callback = setTransactionCallback(resolved, this.buoyUrl)
 
         // Tell Wharf we need to prompt the user with a QR code and a button
         const promptPromise: Cancelable<PromptResponse> = context.ui.prompt({
