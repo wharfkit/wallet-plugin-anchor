@@ -224,6 +224,29 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         // Add the callback to the request
         const callback = setTransactionCallback(modifiedRequest, this.buoyUrl)
 
+        const request = modifiedRequest.encode(true, false)
+
+        const signManually = () => {
+            context.ui?.prompt({
+                title: t('transact.sign_manually.title', { default: 'Sign manually' }),
+                body: t('transact.sign_manually.body', { default: 'Scan the QR-code with Anchor on another device or use the button to open it here.' }),
+                elements: [
+                    {
+                        type: 'qr',
+                        data: String(request),
+                    },
+                    {
+                        type: 'link',
+                        label: t('transact.sign_manually.link.title', { default: 'Open Anchor' }),
+                        data: {
+                            href: String(request),
+                            label: t('transact.sign_manually.link.title', { default: 'Open Anchor' }),
+                        },
+                    },
+                ],
+            })
+        }
+
         // Tell Wharf we need to prompt the user with a QR code and a button
         const promptPromise: Cancelable<PromptResponse> = context.ui.prompt({
             title: t('transact.title', {default: 'Complete using Anchor'}),
@@ -240,10 +263,11 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                     },
                 },
                 {
-                    type: 'link',
+                    type: 'button',
                     label: t('transact.label', {default: 'Sign manually or with another device'}),
                     data: {
                         href: modifiedRequest.encode(true, false, 'esr:'),
+                        onClick: signManually,
                         label: t('transact.label', {
                             default: 'Sign manually or with another device',
                         }),
