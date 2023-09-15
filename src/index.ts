@@ -199,10 +199,10 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         resolved: ResolvedSigningRequest,
         context: TransactContext
     ): Promise<WalletPluginSignResponse> {
-        return this.handleSignatureRequest(resolved, context)
+        return this.handleSigningRequest(resolved, context)
     }
 
-    private async handleSignatureRequest(
+    private async handleSigningRequest(
         resolved: ResolvedSigningRequest,
         context: TransactContext
     ): Promise<WalletPluginSignResponse> {
