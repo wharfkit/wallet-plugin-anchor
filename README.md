@@ -1,13 +1,38 @@
 # @wharfkit/wallet-plugin-anchor
 
-A template to create a `WalletPlugin` for use within the `@wharfkit/session` library.
+A Session Kit wallet plugin for the [Anchor](https://www.greymass.com/anchor) wallet.
 
 ## Usage
 
--   [Use this as a template.](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template)
--   Write your wallet plugin's logic.
--   Publish it on Github or npmjs.com
--   Include it in your project and use it.
+Include this wallet plugin while initializing the SessionKit.
+
+**NOTE**: This wallet plugin will only work with the SessionKit and requires a browser-based environment.
+
+```ts
+import {WalletPluginAnchor} from '@wharfkit/wallet-plugin-anchor'
+
+const kit = new SessionKit({
+    // ... your other options
+    walletPlugins: [new WalletPluginAnchor()],
+})
+```
+
+Custom buoy url and websocket class are supported.
+
+```ts
+import WebSocket from 'isomorphic-ws'
+import {WalletPluginAnchor} from '@wharfkit/wallet-plugin-anchor'
+
+const kit = new SessionKit({
+    // ... your other options
+    walletPlugins: [
+        new WalletPluginAnchor({
+            buoyUrl: 'https://cb.anchor.link',
+            buoyWs: Websocket,
+        }),
+    ],
+})
+```
 
 ## Developing
 
