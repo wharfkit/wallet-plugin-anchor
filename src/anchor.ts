@@ -9,7 +9,6 @@ import {
     LoginContext,
     PrivateKey,
     PublicKey,
-    ResolvedSigningRequest,
     Serializer,
     SigningRequest,
     UInt64,

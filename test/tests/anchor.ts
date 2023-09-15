@@ -36,7 +36,7 @@ suite('anchor', () => {
         test('sets the callback on the request and returns the callback data', async () => {
             const resolved = await makeMockResolvedSigningRequest()
             const buoyUrl = 'https://example.com/buoy'
-            const {service, channel} = setTransactionCallback(resolved, buoyUrl)
+            const {service, channel} = setTransactionCallback(resolved.request, buoyUrl)
 
             const resolvedCallback = resolved.getCallback([mockSignature1])
 
