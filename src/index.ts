@@ -1,4 +1,4 @@
-import {receive, send} from '@greymass/buoy'
+import {send} from '@greymass/buoy'
 import {
     AbstractWalletPlugin,
     CallbackPayload,
@@ -19,18 +19,18 @@ import {
     WalletPluginMetadata,
     WalletPluginSignResponse,
 } from '@wharfkit/session'
-
-import WebSocket from 'isomorphic-ws'
-
 import {
     createIdentityRequest,
+    extractSignaturesFromCallback,
+    isCallback,
+    LinkInfo,
     sealMessage,
     setTransactionCallback,
     verifyLoginCallbackResponse,
-} from './anchor'
-import {LinkInfo} from './anchor-types'
+    waitForCallback,
+} from '@wharfkit/protocol-esr'
 
-import {extractSignaturesFromCallback, isCallback} from './esr'
+import WebSocket from 'isomorphic-ws'
 
 import defaultTranslations from './translations'
 
@@ -351,28 +351,4 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         // This shouldn't ever trigger, but just in case
         throw new Error(errorString)
     }
-}
-
-async function waitForCallback(callbackArgs, buoyWs, t): Promise<CallbackPayload> {
-    // Use the buoy-client to create a promise and wait for a response to the identity request
-    const callbackResponse = await receive({...callbackArgs, WebSocket: buoyWs || WebSocket})
-
-    if (!callbackResponse) {
-        // If the promise was rejected, throw an error
-        throw new Error(callbackResponse.rejected)
-    }
-
-    // If the promise was rejected, throw an error
-    if (typeof callbackResponse.rejected === 'string') {
-        throw new Error(callbackResponse.rejected)
-    }
-
-    // Process the identity request callback payload
-    const payload = JSON.parse(callbackResponse) as CallbackPayload
-
-    if (payload.sa === undefined || payload.sp === undefined || payload.cid === undefined) {
-        throw new Error(t('error.cancelled', {default: 'The request was cancelled from Anchor.'}))
-    }
-
-    return payload
 }

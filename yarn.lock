@@ -622,6 +622,16 @@
     node-fetch "^2.6.1"
     tslib "^2.1.0"
 
+"@wharfkit/protocol-esr@^1.0.0-rc1":
+  version "1.0.0-rc1"
+  resolved "https://registry.yarnpkg.com/@wharfkit/protocol-esr/-/protocol-esr-1.0.0-rc1.tgz#46072262b33d4646c55224e981f05879872f63a2"
+  integrity sha512-RRquKshP3trrtM4JTi8b6z3sd89CYTbKSGv9zUHl4WCHSctCbQyD9lcr8tdeuOMdt6iA2dexIAn4q0gLNaIx2w==
+  dependencies:
+    "@greymass/buoy" "^1.0.3"
+    "@greymass/miniaes" "^1.0.0"
+    isomorphic-ws "^5.0.0"
+    ws "^8.13.0"
+
 "@wharfkit/session@^1.0.0":
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/@wharfkit/session/-/session-1.0.0.tgz#09c60d01a6185ab2e451d34462d84de2d7013220"

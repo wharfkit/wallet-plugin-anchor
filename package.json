@@ -16,8 +16,7 @@
         "prepare": "make"
     },
     "dependencies": {
-        "@greymass/buoy": "^1.0.3",
-        "@greymass/miniaes": "^1.0.0",
+        "@wharfkit/protocol-esr": "^1.0.0-rc1",
         "isomorphic-ws": "^5.0.0",
         "ws": "^8.13.0"
     },
