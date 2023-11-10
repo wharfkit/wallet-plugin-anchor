@@ -9,6 +9,7 @@ import {
     PromptArgs,
     PromptResponse,
     UserInterface,
+    UserInterfaceAccountCreationResponse,
     UserInterfaceLoginResponse,
 } from '@wharfkit/session'
 
@@ -94,5 +95,14 @@ export class MockUserInterface extends AbstractUserInterface implements UserInte
 
     addTranslations(): void {
         this.log('addTranslations')
+    }
+
+    async onAccountCreate(): Promise<UserInterfaceAccountCreationResponse> {
+        this.log('onAccountCreate')
+        return Promise.resolve({})
+    }
+
+    async onAccountCreateComplete(): Promise<void> {
+        this.log('onAccountCreateComplete')
     }
 }

@@ -16,12 +16,12 @@
         "prepare": "make"
     },
     "dependencies": {
-        "@wharfkit/protocol-esr": "^1.0.0-rc1",
+        "@wharfkit/protocol-esr": "^1.1.0",
         "isomorphic-ws": "^5.0.0",
         "ws": "^8.13.0"
     },
     "peerDependencies": {
-        "@wharfkit/session": "^1.0.0"
+        "@wharfkit/session": "^1.1.0"
     },
     "devDependencies": {
         "@rollup/plugin-alias": "^3.1.4",
@@ -36,10 +36,10 @@
         "@types/node": "^18.7.18",
         "@typescript-eslint/eslint-plugin": "^5.20.0",
         "@typescript-eslint/parser": "^5.20.0",
-        "@wharfkit/mock-data": "^1.0.2",
-        "@wharfkit/session": "^1.0.0",
-        "@wharfkit/signing-request": "^3.0.0",
-        "@wharfkit/wallet-plugin-privatekey": "^1.0.0",
+        "@wharfkit/mock-data": "^1.2.0",
+        "@wharfkit/session": "^1.1.0-rcfinal",
+        "@wharfkit/signing-request": "^3.1.0",
+        "@wharfkit/wallet-plugin-privatekey": "^1.1.0",
         "chai": "^4.3.4",
         "eslint": "^8.13.0",
         "eslint-config-prettier": "^8.1.0",
