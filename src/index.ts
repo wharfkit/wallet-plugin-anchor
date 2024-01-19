@@ -115,10 +115,8 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         const t = context.ui.getTranslate(this.id)
 
         // Create the identity request to be presented to the user
-        const {callback, request, requestKey, privateKey} = await createIdentityRequest(
-            context,
-            this.buoyUrl
-        )
+        const {callback, request, sameDeviceRequest, requestKey, privateKey} =
+            await createIdentityRequest(context, this.buoyUrl)
         // Tell Wharf we need to prompt the user with a QR code and a button
         const promptResponse = context.ui?.prompt({
             title: t('login.title', {default: 'Connect with Anchor'}),
@@ -135,7 +133,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                     type: 'link',
                     label: t('login.link', {default: 'Launch Anchor'}),
                     data: {
-                        href: request.encode(true, false, 'esr:'),
+                        href: sameDeviceRequest.encode(true, false, 'esr:'),
                         label: t('login.link', {default: 'Launch Anchor'}),
                         variant: 'primary',
                     },
