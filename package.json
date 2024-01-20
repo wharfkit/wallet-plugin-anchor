@@ -17,7 +17,7 @@
     },
     "dependencies": {
         "@wharfkit/antelope": "^1.0.4",
-        "@wharfkit/protocol-esr": "^1.2.0",
+        "@wharfkit/protocol-esr": "^1.2.1",
         "isomorphic-ws": "^5.0.0",
         "ws": "^8.13.0"
     },

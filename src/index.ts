@@ -22,6 +22,8 @@ import {
 import {
     createIdentityRequest,
     extractSignaturesFromCallback,
+    generateReturnUrl,
+    isAppleHandheld,
     isCallback,
     LinkInfo,
     sealMessage,
@@ -166,6 +168,17 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             this.data.channelUrl = callbackResponse.link_ch
             this.data.channelName = callbackResponse.link_name
 
+            try {
+                if (callbackResponse.link_meta) {
+                    const metadata = JSON.parse(callbackResponse.link_meta)
+                    this.data.sameDevice = metadata.sameDevice
+                    this.data.launchUrl = metadata.launchUrl
+                    this.data.triggerUrl = metadata.triggerUrl
+                }
+            } catch (e) {
+                // console.log('Error processing link_meta', e)
+            }
+
             return {
                 chain: Checksum256.from(callbackResponse.cid),
                 permissionLevel: PermissionLevel.from({
@@ -220,10 +233,34 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         // Create a new signing request based on the existing resolved request
         const modifiedRequest = await context.createRequest({transaction: resolved.transaction})
 
+        // Set the expiration on the request LinkInfo
+        modifiedRequest.setInfoKey(
+            'link',
+            LinkInfo.from({
+                expiration,
+            })
+        )
+
         // Add the callback to the request
         const callback = setTransactionCallback(modifiedRequest, this.buoyUrl)
 
         const request = modifiedRequest.encode(true, false)
+
+        // Same device request
+        const sameDeviceRequest = modifiedRequest.clone()
+        const returnUrl = generateReturnUrl()
+        sameDeviceRequest.setInfoKey('same_device', true)
+        sameDeviceRequest.setInfoKey('return_path', returnUrl)
+
+        if (this.data.sameDevice) {
+            if (this.data.sameDevice) {
+                if (this.data.launchUrl) {
+                    window.location.href = this.data.launchUrl
+                } else if (isAppleHandheld()) {
+                    window.location.href = 'anchor://link'
+                }
+            }
+        }
 
         const signManually = () => {
             context.ui?.prompt({
@@ -241,7 +278,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                         type: 'link',
                         label: t('transact.sign_manually.link.title', {default: 'Open Anchor'}),
                         data: {
-                            href: String(request),
+                            href: String(sameDeviceRequest),
                             label: t('transact.sign_manually.link.title', {default: 'Open Anchor'}),
                         },
                     },
@@ -291,14 +328,6 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         // Clear the timeout if the UI throws (which generally means it closed)
         promptPromise.catch(() => clearTimeout(timer))
 
-        // Set the expiration on the request LinkInfo
-        modifiedRequest.setInfoKey(
-            'link',
-            LinkInfo.from({
-                expiration,
-            })
-        )
-
         // Wait for the callback from the wallet
         const callbackPromise = waitForCallback(callback, this.buoyWs, t)
 
@@ -306,7 +335,11 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         const service = new URL(this.data.channelUrl).origin
         const channel = new URL(this.data.channelUrl).pathname.substring(1)
         const sealedMessage = sealMessage(
-            modifiedRequest.encode(true, false, 'esr:'),
+            (this.data.sameDevice ? sameDeviceRequest : modifiedRequest).encode(
+                true,
+                false,
+                'esr:'
+            ),
             PrivateKey.from(this.data.privateKey),
             PublicKey.from(this.data.signerKey)
         )
