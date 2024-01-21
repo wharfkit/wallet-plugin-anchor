@@ -169,7 +169,6 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             this.data.channelName = callbackResponse.link_name
 
             try {
-                this.data.sameDevice = true // default to true
                 if (callbackResponse.link_meta) {
                     const metadata = JSON.parse(callbackResponse.link_meta)
                     this.data.sameDevice = metadata.sameDevice
@@ -247,6 +246,9 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
 
         const request = modifiedRequest.encode(true, false)
 
+        // Mobile will return true or false, desktop will return undefined
+        const isSameDevice = this.data.sameDevice !== false
+
         // Same device request
         const sameDeviceRequest = modifiedRequest.clone()
         const returnUrl = generateReturnUrl()
@@ -279,7 +281,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                         data: String(request),
                     },
                     {
-                        type: 'button',
+                        type: 'link',
                         label: t('transact.sign_manually.link.title', {default: 'Open Anchor'}),
                         data: {
                             href: String(sameDeviceRequest),
@@ -309,10 +311,9 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                     type: 'button',
                     label: t('transact.label', {default: 'Sign manually or with another device'}),
                     data: {
-                        href: this.data.sameDevice
-                            ? sameDeviceRequest
-                            : modifiedRequest.encode(true, false, 'esr:'),
-                        onClick: this.data.sameDevice ? () => {} : signManually,
+                        onClick: isSameDevice
+                            ? () => (window.location.href = sameDeviceRequest.encode())
+                            : signManually,
                         label: t('transact.label', {
                             default: 'Sign manually or with another device',
                         }),
