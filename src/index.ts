@@ -169,6 +169,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             this.data.channelName = callbackResponse.link_name
 
             try {
+                this.data.sameDevice = true // default to true
                 if (callbackResponse.link_meta) {
                     const metadata = JSON.parse(callbackResponse.link_meta)
                     this.data.sameDevice = metadata.sameDevice
@@ -251,6 +252,9 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         const returnUrl = generateReturnUrl()
         sameDeviceRequest.setInfoKey('same_device', true)
         sameDeviceRequest.setInfoKey('return_path', returnUrl)
+
+        console.log(this.data)
+        console.log(this.data.sameDevice)
 
         if (this.data.sameDevice) {
             if (this.data.sameDevice) {
