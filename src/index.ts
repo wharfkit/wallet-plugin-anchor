@@ -255,9 +255,6 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         sameDeviceRequest.setInfoKey('same_device', true)
         sameDeviceRequest.setInfoKey('return_path', returnUrl)
 
-        console.log(this.data)
-        console.log(this.data.sameDevice)
-
         if (this.data.sameDevice) {
             if (this.data.sameDevice) {
                 if (this.data.launchUrl) {
