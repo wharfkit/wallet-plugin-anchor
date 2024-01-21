@@ -275,7 +275,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                         data: String(request),
                     },
                     {
-                        type: 'link',
+                        type: 'button',
                         label: t('transact.sign_manually.link.title', {default: 'Open Anchor'}),
                         data: {
                             href: String(sameDeviceRequest),
@@ -305,8 +305,10 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                     type: 'button',
                     label: t('transact.label', {default: 'Sign manually or with another device'}),
                     data: {
-                        href: modifiedRequest.encode(true, false, 'esr:'),
-                        onClick: signManually,
+                        href: this.data.sameDevice
+                            ? sameDeviceRequest
+                            : modifiedRequest.encode(true, false, 'esr:'),
+                        onClick: this.data.sameDevice ? () => {} : signManually,
                         label: t('transact.label', {
                             default: 'Sign manually or with another device',
                         }),
