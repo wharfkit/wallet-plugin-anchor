@@ -256,12 +256,10 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         sameDeviceRequest.setInfoKey('return_path', returnUrl)
 
         if (this.data.sameDevice) {
-            if (this.data.sameDevice) {
-                if (this.data.launchUrl) {
-                    window.location.href = this.data.launchUrl
-                } else if (isAppleHandheld()) {
-                    window.location.href = 'anchor://link'
-                }
+            if (this.data.launchUrl) {
+                window.location.href = this.data.launchUrl
+            } else if (isAppleHandheld()) {
+                window.location.href = 'anchor://link'
             }
         }
 
