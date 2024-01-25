@@ -152,15 +152,13 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
 
         // Await a promise race to wait for either the wallet response or the cancel
         const callbackResponse: CallbackPayload = await waitForCallback(callback, this.buoyWs, t)
+        verifyLoginCallbackResponse(callbackResponse, context)
 
-        if (
-            callbackResponse.link_ch &&
-            callbackResponse.link_key &&
-            callbackResponse.link_name &&
-            callbackResponse.cid
-        ) {
-            verifyLoginCallbackResponse(callbackResponse, context)
+        if (!callbackResponse.cid || !callbackResponse.sa || !callbackResponse.sp) {
+            throw new Error('Invalid callback response')
+        }
 
+        if (callbackResponse.link_ch && callbackResponse.link_key && callbackResponse.link_name) {
             this.data.requestKey = requestKey
             this.data.privateKey = privateKey
             this.data.signerKey =
@@ -178,24 +176,14 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             } catch (e) {
                 // console.log('Error processing link_meta', e)
             }
+        }
 
-            return {
-                chain: Checksum256.from(callbackResponse.cid),
-                permissionLevel: PermissionLevel.from({
-                    actor: callbackResponse.sa,
-                    permission: callbackResponse.sp,
-                }),
-            }
-        } else {
-            // Close the prompt
-            promptResponse.cancel('Invalid response from Anchor.')
-
-            throw new Error(
-                t('error.invalid_response', {
-                    default:
-                        'Invalid response from Anchor, must contain link_ch, link_key, link_name and cid flags.',
-                })
-            )
+        return {
+            chain: Checksum256.from(callbackResponse.cid),
+            permissionLevel: PermissionLevel.from({
+                actor: callbackResponse.sa,
+                permission: callbackResponse.sp,
+            }),
         }
     }
 
