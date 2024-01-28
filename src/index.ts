@@ -322,22 +322,24 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         const callbackPromise = waitForCallback(callback, this.buoyWs, t)
 
         // Assemble and send the payload to the wallet
-        const service = new URL(this.data.channelUrl).origin
-        const channel = new URL(this.data.channelUrl).pathname.substring(1)
-        const sealedMessage = sealMessage(
-            (this.data.sameDevice ? sameDeviceRequest : modifiedRequest).encode(
-                true,
-                false,
-                'esr:'
-            ),
-            PrivateKey.from(this.data.privateKey),
-            PublicKey.from(this.data.signerKey)
-        )
+        if (this.data.channelUrl) {
+            const service = new URL(this.data.channelUrl).origin
+            const channel = new URL(this.data.channelUrl).pathname.substring(1)
+            const sealedMessage = sealMessage(
+                (this.data.sameDevice ? sameDeviceRequest : modifiedRequest).encode(
+                    true,
+                    false,
+                    'esr:'
+                ),
+                PrivateKey.from(this.data.privateKey),
+                PublicKey.from(this.data.signerKey)
+            )
 
-        send(Serializer.encode({object: sealedMessage}).array, {
-            service,
-            channel,
-        })
+            send(Serializer.encode({object: sealedMessage}).array, {
+                service,
+                channel,
+            })
+        }
 
         // Wait for either the callback or the prompt to resolve
         const callbackResponse = await Promise.race([callbackPromise, promptPromise]).finally(
