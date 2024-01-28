@@ -42,6 +42,7 @@ const wallet = makeWallet()
 
 export const mockLoginContext: LoginContext = {
     appName: 'mock',
+    arbitrary: {},
     fetch: mockFetch, // Required for unit tests
     ui: new MockUserInterface(),
     walletPlugins: [wallet],
