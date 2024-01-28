@@ -603,7 +603,7 @@
     pako "^2.0.4"
     tslib "^2.1.0"
 
-"@wharfkit/antelope@^1.0.0", "@wharfkit/antelope@^1.0.2", "@wharfkit/antelope@^1.0.4":
+"@wharfkit/antelope@^1.0.0", "@wharfkit/antelope@^1.0.2", "@wharfkit/antelope@^1.0.4", "@wharfkit/antelope@^1.0.5":
   version "1.0.4"
   resolved "https://registry.yarnpkg.com/@wharfkit/antelope/-/antelope-1.0.4.tgz#f88305957c82fac41862a973581797ed29b5c287"
   integrity sha512-FGB7YiTRz86T2V8XJNJGrrNBnIx9y+DV9MqXNwEHBwxzmXdA8Gurk7AQ5RfIQEllJeZbeMd6BeRT1nxQUUTRwQ==
@@ -633,14 +633,14 @@
     node-fetch "^2.6.1"
     tslib "^2.1.0"
 
-"@wharfkit/protocol-esr@^1.2.1":
-  version "1.2.1"
-  resolved "https://registry.yarnpkg.com/@wharfkit/protocol-esr/-/protocol-esr-1.2.1.tgz#83e537c6ec70295141ca399b2c35857f7a28a873"
-  integrity sha512-gOjV8pbQOQLHCs7DqsnVu+qUrgV9RblNR9xUGLo0ldHwveWyULo5eWaxpqW+eaeeDi4YfNruVp4mUmEEZPhdAQ==
+"@wharfkit/protocol-esr@^1.3.0":
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/@wharfkit/protocol-esr/-/protocol-esr-1.3.0.tgz#5087bf9afb94d0a23fb650ad2e7dd6bd96ae7524"
+  integrity sha512-iJLE1uR03r6xL7svn387YyGe0NI6Jw+bjoXKZBn6AzMLgCgXHsZ2fYO7Iriq51WiHY3vDoMI3MlKoqCCBuVECw==
   dependencies:
     "@greymass/buoy" "^1.0.3"
     "@greymass/miniaes" "^1.0.0"
-    "@wharfkit/antelope" "^1.0.4"
+    "@wharfkit/antelope" "^1.0.5"
     isomorphic-ws "^5.0.0"
     ws "^8.13.0"
 
