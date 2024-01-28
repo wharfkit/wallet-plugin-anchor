@@ -339,6 +339,9 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                 service,
                 channel,
             })
+        } else {
+            // If no channel is defined, fallback to the same device request and trigger immediately
+            window.location.href = sameDeviceRequest.encode()
         }
 
         // Wait for either the callback or the prompt to resolve
