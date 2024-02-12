@@ -143,13 +143,6 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             ],
         })
 
-        promptResponse.catch((error) => {
-            // Throw if what we caught was a cancelation
-            if (error instanceof Canceled) {
-                throw error
-            }
-        })
-
         // Await a promise race to wait for either the wallet response or the cancel
         const callbackResponse: CallbackPayload = await waitForCallback(callback, this.buoyWs, t)
         verifyLoginCallbackResponse(callbackResponse, context)
