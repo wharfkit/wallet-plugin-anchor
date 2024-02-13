@@ -1,7 +1,7 @@
 {
     "name": "@wharfkit/wallet-plugin-anchor",
     "description": "An Anchor plugin for use with @wharfkit/session.",
-    "version": "1.3.2",
+    "version": "1.3.3",
     "homepage": "https://github.com/wharfkit/wallet-plugin-anchor",
     "license": "BSD-3-Clause",
     "main": "lib/wallet-plugin-anchor.js",
