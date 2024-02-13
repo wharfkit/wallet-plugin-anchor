@@ -143,6 +143,10 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             ],
         })
 
+        promptResponse.catch(() => {
+            console.info('Modal closed')
+        })
+
         // Await a promise race to wait for either the wallet response or the cancel
         const callbackResponse: CallbackPayload = await waitForCallback(callback, this.buoyWs, t)
         verifyLoginCallbackResponse(callbackResponse, context)
