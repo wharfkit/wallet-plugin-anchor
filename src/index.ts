@@ -3,7 +3,6 @@ import {
     AbstractWalletPlugin,
     CallbackPayload,
     Cancelable,
-    Canceled,
     Checksum256,
     LoginContext,
     Logo,
@@ -144,6 +143,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         })
 
         promptResponse.catch(() => {
+            // eslint-disable-next-line no-console
             console.info('Modal closed')
         })
 
@@ -175,12 +175,20 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             }
         }
 
+        const resolvedResponse = await ResolvedSigningRequest.fromPayload(
+            callbackResponse,
+            context.esrOptions
+        )
+
+        const identityProof = resolvedResponse.getIdentityProof(callbackResponse.sig)
+
         return {
             chain: Checksum256.from(callbackResponse.cid),
             permissionLevel: PermissionLevel.from({
                 actor: callbackResponse.sa,
                 permission: callbackResponse.sp,
             }),
+            identityProof,
         }
     }
 
