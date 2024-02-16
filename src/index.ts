@@ -147,9 +147,13 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             console.info('Modal closed')
         })
 
+        console.log('before esr')
+
         // Await a promise race to wait for either the wallet response or the cancel
         const callbackResponse: CallbackPayload = await waitForCallback(callback, this.buoyWs, t)
+        console.log({ callbackResponse })
         verifyLoginCallbackResponse(callbackResponse, context)
+        console.log('after verifyLoginCallbackResponse', { callbackResponse })
 
         if (!callbackResponse.cid || !callbackResponse.sa || !callbackResponse.sp) {
             throw new Error('Invalid callback response')
@@ -180,7 +184,11 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             context.esrOptions
         )
 
+        console.log({ resolvedResponse, callbackResponse })
+
         const identityProof = resolvedResponse.getIdentityProof(callbackResponse.sig)
+
+        console.log({ identityProof})
 
         return {
             chain: Checksum256.from(callbackResponse.cid),
@@ -360,6 +368,8 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         const wasSuccessful =
             isCallback(callbackResponse) &&
             extractSignaturesFromCallback(callbackResponse).length > 0
+
+        console.log({ callbackResponse, wasSuccessful })
 
         if (wasSuccessful) {
             // If the callback was resolved, create a new request from the response
