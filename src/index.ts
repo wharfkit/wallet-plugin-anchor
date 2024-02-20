@@ -118,6 +118,14 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         // Create the identity request to be presented to the user
         const {callback, request, sameDeviceRequest, requestKey, privateKey} =
             await createIdentityRequest(context, this.buoyUrl)
+
+        // Attempt to trigger the same device request immediately
+        try {
+            window.location.href = sameDeviceRequest.encode(true, false, 'esr:')
+        } catch (e) {
+            console.log('No default handler for the esr protocol was triggered automatically.')
+        }
+
         // Tell Wharf we need to prompt the user with a QR code and a button
         const promptResponse = context.ui?.prompt({
             title: t('login.title', {default: 'Connect with Anchor'}),
