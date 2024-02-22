@@ -2,6 +2,7 @@
     "login": {
         "title": "Connect with Anchor",
         "body": "Scan with Anchor on your mobile device or click the button below to open on this device.",
+        "mobile_body": "Click the button below to open Anchor on this device.",
         "link": "Launch Anchor"
     },
     "transact": {
