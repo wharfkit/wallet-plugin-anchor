@@ -8,6 +8,7 @@ import {
     Logo,
     PermissionLevel,
     PrivateKey,
+    PromptArgs,
     PromptResponse,
     PublicKey,
     ResolvedSigningRequest,
@@ -118,8 +119,42 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         // Create the identity request to be presented to the user
         const {callback, request, sameDeviceRequest, requestKey, privateKey} =
             await createIdentityRequest(context, this.buoyUrl)
-        // Tell Wharf we need to prompt the user with a QR code and a button
-        const promptResponse = context.ui?.prompt({
+
+        // User agent checks
+        const userAgent = navigator.userAgent
+        const isMobileDevice = /Android|iPhone|iPad|iPod/.test(userAgent)
+        const isSafari = /Safari/.test(userAgent)
+        const isDesktopSafari = !isMobileDevice && isSafari
+
+        // Attempt to trigger the same device request immediately except for desktop Safari
+        try {
+            if (!isDesktopSafari) {
+                window.location.href = sameDeviceRequest.encode(true, false, 'esr:')
+            }
+        } catch (e) {
+            console.log('No default handler for the esr protocol was triggered automatically.')
+        }
+
+        // Build the prompt based on the device type
+        const mobilePrompt: PromptArgs = {
+            title: t('login.title', {default: 'Connect with Anchor'}),
+            body: t('login.mobile_body', {
+                default: 'Click the button below to open Anchor on this device.',
+            }),
+            elements: [
+                {
+                    type: 'link',
+                    label: t('login.link', {default: 'Launch Anchor'}),
+                    data: {
+                        href: String(sameDeviceRequest),
+                        label: t('login.link', {default: 'Launch Anchor'}),
+                        variant: 'primary',
+                    },
+                },
+            ],
+        }
+
+        const desktopPrompt: PromptArgs = {
             title: t('login.title', {default: 'Connect with Anchor'}),
             body: t('login.body', {
                 default:
@@ -140,7 +175,10 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                     },
                 },
             ],
-        })
+        }
+
+        // Tell Wharf we need to prompt the user with a QR code and a button
+        const promptResponse = context.ui?.prompt(isMobileDevice ? mobilePrompt : desktopPrompt)
 
         promptResponse.catch(() => {
             // eslint-disable-next-line no-console
