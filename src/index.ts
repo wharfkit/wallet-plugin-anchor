@@ -8,6 +8,7 @@ import {
     Logo,
     PermissionLevel,
     PrivateKey,
+    PromptElement,
     PromptResponse,
     PublicKey,
     ResolvedSigningRequest,
@@ -24,6 +25,7 @@ import {
     generateReturnUrl,
     isAppleHandheld,
     isCallback,
+    isKnownMobile,
     LinkInfo,
     sealMessage,
     setTransactionCallback,
@@ -118,6 +120,31 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         // Create the identity request to be presented to the user
         const {callback, request, sameDeviceRequest, requestKey, privateKey} =
             await createIdentityRequest(context, this.buoyUrl)
+
+        // Elements for the login prompt
+        const elements: PromptElement[] = [
+            {
+                type: 'link',
+                label: t('login.link', {default: 'Launch Anchor'}),
+                data: {
+                    href: sameDeviceRequest.encode(true, false, 'esr:'),
+                    label: t('login.link', {default: 'Launch Anchor'}),
+                    variant: 'primary',
+                },
+            },
+        ]
+
+        // If we know this is NOT a mobile device, show the QR code
+        if (!isKnownMobile()) {
+            elements.unshift({
+                type: 'qr',
+                data: request.encode(true, false, 'esr:'),
+            })
+        }
+
+        // Automatically try to open the link
+        window.location.href = sameDeviceRequest.encode(true, false, 'esr:')
+
         // Tell Wharf we need to prompt the user with a QR code and a button
         const promptResponse = context.ui?.prompt({
             title: t('login.title', {default: 'Connect with Anchor'}),
@@ -125,21 +152,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                 default:
                     'Scan with Anchor on your mobile device or click the button below to open on this device.',
             }),
-            elements: [
-                {
-                    type: 'qr',
-                    data: request.encode(true, false, 'esr:'),
-                },
-                {
-                    type: 'link',
-                    label: t('login.link', {default: 'Launch Anchor'}),
-                    data: {
-                        href: sameDeviceRequest.encode(true, false, 'esr:'),
-                        label: t('login.link', {default: 'Launch Anchor'}),
-                        variant: 'primary',
-                    },
-                },
-            ],
+            elements,
         })
 
         promptResponse.catch(() => {
