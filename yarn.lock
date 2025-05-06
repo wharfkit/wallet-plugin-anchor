@@ -655,10 +655,10 @@
     node-fetch "^2.6.1"
     tslib "^2.1.0"
 
-"@wharfkit/protocol-esr@^1.3.2":
-  version "1.3.2"
-  resolved "https://registry.yarnpkg.com/@wharfkit/protocol-esr/-/protocol-esr-1.3.2.tgz#b7df3124cc743c6adbe64f7779375fda816de4e5"
-  integrity sha512-LK/iP7T9ybGTl97SRtCNO2aBctY/JQ6yH9N+UkI7gthQPn4zmzAHr+Ew8rHlKSvX03FwoyD1EtB3klHRa00WLw==
+"@wharfkit/protocol-esr@^1.4.0-rc1":
+  version "1.4.0-rc1"
+  resolved "https://registry.yarnpkg.com/@wharfkit/protocol-esr/-/protocol-esr-1.4.0-rc1.tgz#f0df1b10093542571221a5ec3fc9e7dfaadfe342"
+  integrity sha512-0Cqsc3z01dpSkn8akn9oYcCH7pF7n0B5lVgCcwEazqDFJlb8rjUD2hYnvBmfyo3uFuUNZeFJA5mQW6X3589gTw==
   dependencies:
     "@greymass/buoy" "^1.0.3"
     "@greymass/miniaes" "^1.0.0"
