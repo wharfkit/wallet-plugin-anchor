@@ -259,7 +259,9 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         const sameDeviceRequest = modifiedRequest.clone()
         const returnUrl = generateReturnUrl()
         sameDeviceRequest.setInfoKey('same_device', true)
-        sameDeviceRequest.setInfoKey('return_path', returnUrl)
+        if (returnUrl) {
+            sameDeviceRequest.setInfoKey('return_path', returnUrl)
+        }
 
         if (this.data.sameDevice) {
             if (this.data.launchUrl) {
