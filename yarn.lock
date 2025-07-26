@@ -220,13 +220,6 @@
     eventemitter3 "^4.0.7"
     tslib "^2.1.0"
 
-"@greymass/miniaes@^1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@greymass/miniaes/-/miniaes-1.0.0.tgz#2337a4637edbb49289f3c977c5891bb6bef1ba75"
-  integrity sha512-xKYTnAyyoq3gpJS11JvU4dkju28M8Zbp06CuP3aKR4DMH6B2z64LauGGGzKksKh5Qd770JA/dzhLbImnBlymbg==
-  dependencies:
-    tslib "^2.1.0"
-
 "@humanwhocodes/config-array@^0.11.8":
   version "0.11.8"
   resolved "https://registry.yarnpkg.com/@humanwhocodes/config-array/-/config-array-0.11.8.tgz#03595ac2075a4dc0f191cc2131de14fbd7d410b9"
@@ -615,7 +608,7 @@
     "@wharfkit/token" "^1.0.1"
     tslib "^2.1.0"
 
-"@wharfkit/antelope@^1.0.0", "@wharfkit/antelope@^1.0.2", "@wharfkit/antelope@^1.0.4", "@wharfkit/antelope@^1.0.5":
+"@wharfkit/antelope@^1.0.0", "@wharfkit/antelope@^1.0.2", "@wharfkit/antelope@^1.0.4", "@wharfkit/antelope@^1.0.5", "@wharfkit/antelope@^1.1.0":
   version "1.0.5"
   resolved "https://registry.yarnpkg.com/@wharfkit/antelope/-/antelope-1.0.5.tgz#a33893137e9127847128725d185a2e940a2e243a"
   integrity sha512-/ptouzm4cRVY5seLrvfQR8r5KzzHS+4UOycSiMNmZFmKRZWI/T29dMLJn4IXgakkghPB1iiSD+QcDpguyNGTpA==
@@ -655,14 +648,14 @@
     node-fetch "^2.6.1"
     tslib "^2.1.0"
 
-"@wharfkit/protocol-esr@^1.4.0":
-  version "1.4.0"
-  resolved "https://registry.yarnpkg.com/@wharfkit/protocol-esr/-/protocol-esr-1.4.0.tgz#5118fd9f1351cbca2b4ff8936b15f13fb75f981a"
-  integrity sha512-RxNMkzL0JH9aH/u/6ffaGhqplHHKqHl6VaM7bpatq6Gw2scvvr23WX8vieIo4TVoKJQUwDi45ENJjRtvOAqy2w==
+"@wharfkit/protocol-esr@^1.5.0":
+  version "1.5.0"
+  resolved "https://registry.yarnpkg.com/@wharfkit/protocol-esr/-/protocol-esr-1.5.0.tgz#9f0548560054628f165c9b44ba98dd8f17c339e1"
+  integrity sha512-YNcs5rK151uOuI3Gvy7jiJ4JOPx0Mu8zGiDP/KI7JhI19+yiPPUjz5+59jrCwPv5IIl23BZGUDiYA7qergbbVA==
   dependencies:
     "@greymass/buoy" "^1.0.3"
-    "@greymass/miniaes" "^1.0.0"
-    "@wharfkit/antelope" "^1.0.5"
+    "@wharfkit/antelope" "^1.1.0"
+    "@wharfkit/sealed-messages" "^1.1.0"
     isomorphic-ws "^5.0.0"
     ws "^8.13.0"
 
@@ -674,6 +667,13 @@
     "@wharfkit/antelope" "^1.0.0"
     bn.js "^4.11.9"
     tslib "^2.1.0"
+
+"@wharfkit/sealed-messages@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@wharfkit/sealed-messages/-/sealed-messages-1.1.0.tgz#6127138b242d7791fe17fdb9f5da3d8103e0cc8e"
+  integrity sha512-UuN5I4+DOH0mM8fVp4aojKqNPt9KptK4J37YJr6i+f4jTELTt4wsrikq2bZSkzIf6RbLe462f/QYtRqygl6CYg==
+  dependencies:
+    "@wharfkit/antelope" "^1.1.0"
 
 "@wharfkit/session@^1.2.7":
   version "1.2.7"
