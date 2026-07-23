@@ -1,1 +1,20 @@
-{}
+{
+    "login": {
+        "title": "連接Anchor",
+        "body": "在您的裝置上使用Anchor掃描或者點擊下方按鈕開啟。",
+        "link": "啟動Anchor"
+    },
+    "transact": {
+        "title": "完成使用Anchor",
+        "body": "請在\"{{channelName}}\"上開啟您的Anchor錢包以瀏覽並批准此交易。",
+        "label": "手動或使用其他裝置簽署",
+        "link": "手動觸發",
+        "await": "等待Anchor回應"
+    },
+    "error": {
+        "expired": "請求已過期，請重試。",
+        "invalid_response": "無效的Anchor回應，必須包含link_ch, link_key, link_name和cid標識符。",
+        "not_completed": "此請求未完成。",
+        "cancelled": "請求已從Anchor取消。"
+    }
+}

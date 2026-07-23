@@ -1,1 +1,20 @@
-{}
+{
+    "login": {
+        "title": "Anchor로 연결",
+        "body": "모바일 기기에서 Anchor로 스캔하거나 아래 버튼을 클릭하여 이 기기에서 여세요.",
+        "link": "Anchor 실행"
+    },
+    "transact": {
+        "title": "Anchor로 완료",
+        "body": "이 거래를 검토하고 승인하려면 \"{{channelName}}\"에서 Anchor 지갑을 여세요.",
+        "label": "수동으로 또는 다른 기기로 서명",
+        "link": "수동으로 실행",
+        "await": "Anchor의 응답을 기다리는 중"
+    },
+    "error": {
+        "expired": "요청이 만료되었습니다. 다시 시도해 주세요.",
+        "invalid_response": "Anchor의 응답이 유효하지 않습니다. link_ch, link_key, link_name 및 cid 플래그가 포함되어야 합니다.",
+        "not_completed": "요청이 완료되지 않았습니다.",
+        "cancelled": "요청이 Anchor에서 취소되었습니다."
+    }
+}
