@@ -41,7 +41,10 @@ class MockWebSocket {
     onmessage: any = null
     onerror: any = null
     onclose: any = null
-    constructor(public url: string) {}
+    url: string
+    constructor(url: string) {
+        this.url = url
+    }
     addEventListener() {}
     removeEventListener() {}
     send() {}

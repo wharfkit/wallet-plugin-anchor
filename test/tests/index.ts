@@ -16,6 +16,10 @@ suite('wallet plugin', function () {
     this.timeout(120 * 1000)
     this.slow(5 * 1000)
 
+    teardown(function () {
+        sinon.restore()
+    })
+
     // TODO: Implement a real test, this currently open a socket and expects Anchor to respond.
     test('login and sign', async function () {
         sinon.stub(buoy, 'receive').resolves(JSON.stringify(mockCallbackPayload))

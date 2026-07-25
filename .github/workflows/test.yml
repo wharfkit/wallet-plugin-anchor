@@ -6,15 +6,15 @@ jobs:
         strategy:
             fail-fast: false
             matrix:
-                node-version: [14, 16, 18]
+                node-version: [18, 20, 22]
         name: Node.js v${{ matrix.node-version }}
         steps:
             - name: Setup Node.js
-              uses: actions/setup-node@v2
+              uses: actions/setup-node@v4
               with:
                   node-version: ${{ matrix.node-version }}
             - name: Checkout code
-              uses: actions/checkout@v2
+              uses: actions/checkout@v4
             - name: Install dependencies
               run: make node_modules
             - name: Run checks
