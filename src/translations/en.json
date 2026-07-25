@@ -4,6 +4,42 @@
         "body": "Scan with Anchor on your mobile device or click the button below to open on this device.",
         "link": "Launch Anchor"
     },
+    "mode": {
+        "title": "How do you use Anchor?",
+        "body": "Choose where to approve requests. You can choose differently the next time you log in.",
+        "web": {
+            "label": "In this browser using anchorwallet.io",
+            "detail": "with a passkey or Ledger",
+            "detail_no_ledger": "with a passkey"
+        },
+        "app": {
+            "label": "With the Anchor app",
+            "detail": "on this or another device"
+        },
+        "switch": {
+            "to_web": "Use Anchor in this browser instead",
+            "to_app": "Use the Anchor app instead"
+        }
+    },
+    "fallback": {
+        "body": "Don't have the app?",
+        "label": "Continue in this browser instead"
+    },
+    "recovery": {
+        "title": "Request cancelled",
+        "body": "Choose how you want to try again."
+    },
+    "web": {
+        "waiting": {
+            "title": "Approve in Anchor",
+            "body": "Please approve this in the Anchor window."
+        },
+        "blocked": {
+            "title": "Pop-up blocked",
+            "body": "Pop-up blocked by your browser. Open the Anchor window manually.",
+            "label": "Open Anchor"
+        }
+    },
     "transact": {
         "title": "Complete using Anchor",
         "body": "Please open your Anchor Wallet on \"{{channelName}}\" to review and approve this transaction.",

@@ -4,6 +4,42 @@
         "body": "在您的设备上使用Anchor扫描或者点击下方按钮打开。",
         "title": "连接Anchor"
     },
+    "mode": {
+        "title": "您如何使用 Anchor？",
+        "body": "选择批准请求的位置。下次登录时，您可以选择其他方式。",
+        "web": {
+            "label": "在此浏览器中使用 anchorwallet.io",
+            "detail": "使用通行密钥或 Ledger",
+            "detail_no_ledger": "使用通行密钥"
+        },
+        "app": {
+            "label": "使用 Anchor 应用",
+            "detail": "在此设备或其他设备上"
+        },
+        "switch": {
+            "to_web": "改在此浏览器中使用 Anchor",
+            "to_app": "改用 Anchor 应用"
+        }
+    },
+    "fallback": {
+        "body": "没有安装 Anchor 应用？",
+        "label": "改在此浏览器中继续"
+    },
+    "recovery": {
+        "title": "请求已取消",
+        "body": "请选择重新尝试的方式。"
+    },
+    "web": {
+        "waiting": {
+            "title": "在 Anchor 中批准",
+            "body": "请在 Anchor 窗口中批准。"
+        },
+        "blocked": {
+            "title": "弹出窗口已被拦截",
+            "body": "浏览器拦截了弹出窗口。请手动打开 Anchor 窗口。",
+            "label": "打开 Anchor"
+        }
+    },
     "error": {
         "cancelled": "请求已从Anchor取消。",
         "not_completed": "此请求未完成。",

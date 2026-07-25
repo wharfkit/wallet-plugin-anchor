@@ -1,0 +1,109 @@
+import {Cancelable, LoginContext, PromptResponse} from '@wharfkit/session'
+
+import {Translator} from './transports/types'
+
+/** Anchor transport used for login and signing: browser authenticator or native app. */
+export type AnchorMode = 'web' | 'app'
+
+function isAnchorMode(value: unknown): value is AnchorMode {
+    return value === 'web' || value === 'app'
+}
+
+export function readMode(data: Record<string, any>): AnchorMode | undefined {
+    if (isAnchorMode(data.mode)) {
+        return data.mode
+    }
+    if (data.channelUrl || data.signerKey) {
+        return 'app'
+    }
+    if (data.encryptionKey && data.messageKey) {
+        return 'web'
+    }
+    return undefined
+}
+
+export function writeMode(data: Record<string, any>, mode: AnchorMode) {
+    if (!isAnchorMode(mode)) {
+        throw new Error(`Invalid Anchor mode: ${mode}`)
+    }
+    data.mode = mode
+}
+
+export function ledgerTransportAvailable(): boolean {
+    if (typeof navigator === 'undefined') {
+        return false
+    }
+    const nav = navigator as any
+    return Boolean(nav.hid) || Boolean(nav.usb)
+}
+
+function modeElements(t: Translator, onChoice: (mode: AnchorMode) => void, includeWeb: boolean) {
+    const webLabel = t('mode.web.label', {
+        default: 'In this browser using anchorwallet.io',
+    })
+    const webDetail = ledgerTransportAvailable()
+        ? t('mode.web.detail', {default: 'with a passkey or Ledger'})
+        : t('mode.web.detail_no_ledger', {default: 'with a passkey'})
+    const appLabel = t('mode.app.label', {default: 'With the Anchor app'})
+    const appDetail = t('mode.app.detail', {default: 'on this or another device'})
+
+    const elements: any[] = []
+    if (includeWeb) {
+        elements.push({
+            type: 'button',
+            label: webLabel,
+            data: {
+                label: `${webLabel}\n${webDetail}`,
+                variant: 'primary',
+                onClick: () => onChoice('web'),
+            },
+        })
+    }
+    elements.push({
+        type: 'button',
+        label: appLabel,
+        data: {
+            label: `${appLabel}\n${appDetail}`,
+            variant: includeWeb ? 'secondary' : 'primary',
+            onClick: () => onChoice('app'),
+        },
+    })
+    return elements
+}
+
+/** Two buttons, no QR, no sub-product logos. `onChoice` fires synchronously inside the click. */
+export function promptForMode(
+    context: LoginContext,
+    t: Translator,
+    onChoice: (mode: AnchorMode) => void
+): Cancelable<PromptResponse> {
+    if (!context.ui) {
+        throw new Error('No UI available')
+    }
+
+    return context.ui.prompt({
+        title: t('mode.title', {default: 'How do you use Anchor?'}),
+        body: t('mode.body', {
+            default:
+                'Choose where to approve requests. You can choose differently the next time you log in.',
+        }),
+        elements: modeElements(t, onChoice, true),
+    })
+}
+
+export function promptForRecovery(
+    context: LoginContext,
+    t: Translator,
+    includeWeb: boolean,
+    onChoice: (mode: AnchorMode) => void
+): Cancelable<PromptResponse> {
+    if (!context.ui) {
+        throw new Error('No UI available')
+    }
+
+    return context.ui.prompt({
+        title: t('recovery.title', {default: 'Request cancelled'}),
+        body: t('recovery.body', {default: 'Choose how you want to try again.'}),
+        elements: modeElements(t, onChoice, includeWeb),
+    })
+}
