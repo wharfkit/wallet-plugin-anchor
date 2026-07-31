@@ -668,3 +668,109 @@ suite('WalletPluginAnchor.openWallet (static)', function () {
         assert.deepEqual((window.open as any).calls, ['https://wax.example.com'])
     })
 })
+
+suite('per-call mode', function () {
+    this.timeout(20 * 1000)
+
+    function contextWith(ui: any, chain: ChainDefinition, arbitrary: Record<string, any>) {
+        return {...(makeLoginContext(ui, chain) as any), arbitrary} as LoginContext
+    }
+
+    test('a per-call web mode skips the choice screen', async function () {
+        const ui = makeMockUI()
+        const plugin = new WalletPluginAnchor()
+        plugin
+            .login(contextWith(ui, jungle4, {anchor: {mode: 'web'}}))
+            .catch(() => undefined)
+        await settle()
+        assert.equal(ui.lastPrompt()!.title, 'Approve in Anchor', 'straight to the popup')
+    })
+
+    test('a per-call app mode skips the choice screen', async function () {
+        const ui = makeMockUI()
+        const plugin = new WalletPluginAnchor()
+        plugin
+            .login(contextWith(ui, jungle4, {anchor: {mode: 'app'}}))
+            .catch(() => undefined)
+        await settle()
+        assert.equal(ui.lastPrompt()!.title, 'Connect with Anchor')
+    })
+
+    test('the per-call mode beats setMode', async function () {
+        const ui = makeMockUI()
+        const plugin = new WalletPluginAnchor()
+        plugin.setMode('app')
+        plugin
+            .login(contextWith(ui, jungle4, {anchor: {mode: 'web'}}))
+            .catch(() => undefined)
+        await settle()
+        assert.equal(ui.lastPrompt()!.title, 'Approve in Anchor')
+    })
+
+    test('the per-call mode reaches the session data for signing', async function () {
+        const ui = makeMockUI()
+        const plugin = new WalletPluginAnchor()
+        plugin
+            .login(contextWith(ui, jungle4, {anchor: {mode: 'web'}}))
+            .catch(() => undefined)
+        await settle()
+        assert.equal(plugin.getMode(), 'web')
+    })
+
+    test('the per-call mode does not leak into the next login', async function () {
+        const ui = makeMockUI()
+        const plugin = new WalletPluginAnchor()
+        plugin
+            .login(contextWith(ui, jungle4, {anchor: {mode: 'web'}}))
+            .catch(() => undefined)
+        await settle()
+
+        plugin.login(makeLoginContext(ui, jungle4)).catch(() => undefined)
+        await settle()
+        assert.equal(
+            ui.lastPrompt()!.title,
+            'How do you use Anchor?',
+            'the instance override must still be unset'
+        )
+    })
+
+    test('no per-call mode still shows the choice screen', async function () {
+        const ui = makeMockUI()
+        const plugin = new WalletPluginAnchor()
+        plugin.login(contextWith(ui, jungle4, {})).catch(() => undefined)
+        await settle()
+        assert.equal(ui.lastPrompt()!.title, 'How do you use Anchor?')
+    })
+
+    test('a bad per-call mode rejects the login', async function () {
+        const ui = makeMockUI()
+        const plugin = new WalletPluginAnchor()
+        let message = ''
+        try {
+            await plugin.login(contextWith(ui, jungle4, {anchor: {mode: 'sideways'}}))
+        } catch (error: any) {
+            message = error.message
+        }
+        assert.include(message, 'Invalid Anchor mode: sideways')
+    })
+
+    test('a bad per-call mode rejects on a native-only chain too', async function () {
+        const ui = makeMockUI()
+        const plugin = new WalletPluginAnchor()
+        let message = ''
+        try {
+            await plugin.login(contextWith(ui, wax, {anchor: {mode: 'sideways'}}))
+        } catch (error: any) {
+            message = error.message
+        }
+        assert.include(message, 'Invalid Anchor mode: sideways')
+    })
+
+    test('a per-call web mode is ignored on a native-only chain', async function () {
+        const ui = makeMockUI()
+        const plugin = new WalletPluginAnchor()
+        plugin.login(contextWith(ui, wax, {anchor: {mode: 'web'}})).catch(() => undefined)
+        await settle()
+        assert.equal(ui.lastPrompt()!.title, 'Connect with Anchor')
+    })
+})

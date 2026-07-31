@@ -6,6 +6,7 @@ import {
     AnchorMode,
     ledgerTransportAvailable,
     promptForMode,
+    readLoginOptions,
     readMode,
     writeMode,
 } from '$lib/mode'
@@ -166,5 +167,46 @@ suite('choice screen', function () {
         ).catch(() => undefined)
         appUI.clickButton(1)
         assert.deepEqual(appSeen, ['app'])
+    })
+})
+
+suite('login options', function () {
+    test('reads a namespaced per-call mode', function () {
+        assert.deepEqual(readLoginOptions('anchor', {anchor: {mode: 'web'}}), {mode: 'web'})
+        assert.deepEqual(readLoginOptions('anchor', {anchor: {mode: 'app'}}), {mode: 'app'})
+    })
+
+    test('an absent bag is not an error', function () {
+        assert.deepEqual(readLoginOptions('anchor'), {})
+        assert.deepEqual(readLoginOptions('anchor', {}), {})
+    })
+
+    test('an entry with no mode is not an error', function () {
+        assert.deepEqual(readLoginOptions('anchor', {anchor: {}}), {})
+        assert.deepEqual(readLoginOptions('anchor', {anchor: {mode: undefined}}), {})
+    })
+
+    test('another plugin\'s options are ignored', function () {
+        assert.deepEqual(readLoginOptions('anchor', {other: {mode: 'web'}}), {})
+    })
+
+    test('the id decides which entry is read', function () {
+        assert.deepEqual(readLoginOptions('other', {anchor: {mode: 'web'}, other: {mode: 'app'}}), {
+            mode: 'app',
+        })
+    })
+
+    test('a bad mode throws like setMode does', function () {
+        assert.throws(
+            () => readLoginOptions('anchor', {anchor: {mode: 'sideways'}}),
+            /Invalid Anchor mode: sideways/
+        )
+    })
+
+    test('an un-nested value throws rather than being ignored', function () {
+        assert.throws(
+            () => readLoginOptions('anchor', {anchor: 'web'}),
+            /Invalid Anchor login options: web/
+        )
     })
 })

@@ -21,7 +21,14 @@ import WebSocket from 'isomorphic-ws'
 
 import defaultTranslations from './translations'
 import {resolveWebAuthenticatorUrl} from './chains'
-import {AnchorMode, promptForMode, promptForRecovery, readMode, writeMode} from './mode'
+import {
+    AnchorMode,
+    promptForMode,
+    promptForRecovery,
+    readLoginOptions,
+    readMode,
+    writeMode,
+} from './mode'
 import {AnchorRequestCancelledError} from './transports/errors'
 import {NativeTransport} from './transports/native'
 import {openAuthenticatorWindow, WebTransport} from './transports/web'
@@ -164,6 +171,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             throw new Error('No UI available')
         }
 
+        const perCall = readLoginOptions(this.id, context.arbitrary)
         const t = context.ui.getTranslate(this.id)
         const webUrl = resolveWebAuthenticatorUrl(context.chain?.id, this.webAuthenticatorUrls)
         try {
@@ -177,15 +185,10 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                 return await this.native.login(context, bundle, t)
             }
 
-            if (this.loginModeOverride) {
-                return await this.loginWithSwitch(
-                    context,
-                    bundle,
-                    t,
-                    webUrl,
-                    this.loginModeOverride,
-                    true
-                )
+            const forcedMode = perCall.mode ?? this.loginModeOverride
+            if (forcedMode) {
+                writeMode(this.data, forcedMode)
+                return await this.loginWithSwitch(context, bundle, t, webUrl, forcedMode, true)
             }
 
             const {mode, popup} = await this.chooseMode(context, bundle, t, webUrl)
@@ -348,4 +351,4 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
 }
 
 export {DEFAULT_WEB_AUTHENTICATOR_URLS} from './chains'
-export type {AnchorMode} from './mode'
+export type {AnchorLoginOptions, AnchorMode} from './mode'

@@ -5,12 +5,12 @@ import {Translator} from './transports/types'
 /** Anchor transport used for login and signing: browser authenticator or native app. */
 export type AnchorMode = 'web' | 'app'
 
-function isAnchorMode(value: unknown): value is AnchorMode {
+function isValidMode(value: unknown): value is AnchorMode {
     return value === 'web' || value === 'app'
 }
 
 export function readMode(data: Record<string, any>): AnchorMode | undefined {
-    if (isAnchorMode(data.mode)) {
+    if (isValidMode(data.mode)) {
         return data.mode
     }
     if (data.channelUrl || data.signerKey) {
@@ -23,10 +23,33 @@ export function readMode(data: Record<string, any>): AnchorMode | undefined {
 }
 
 export function writeMode(data: Record<string, any>, mode: AnchorMode) {
-    if (!isAnchorMode(mode)) {
+    if (!isValidMode(mode)) {
         throw new Error(`Invalid Anchor mode: ${mode}`)
     }
     data.mode = mode
+}
+
+/** Per-call options from `login({arbitrary: {anchor: {...}}})`. */
+export interface AnchorLoginOptions {
+    mode?: AnchorMode
+}
+
+/** Read one plugin's entry out of the shared arbitrary bag. Throws on a bad value. */
+export function readLoginOptions(id: string, arbitrary?: Record<string, any>): AnchorLoginOptions {
+    const options = arbitrary?.[id]
+    if (options === undefined || options === null) {
+        return {}
+    }
+    if (typeof options !== 'object') {
+        throw new Error(`Invalid Anchor login options: ${options}`)
+    }
+    if (options.mode === undefined) {
+        return {}
+    }
+    if (!isValidMode(options.mode)) {
+        throw new Error(`Invalid Anchor mode: ${options.mode}`)
+    }
+    return {mode: options.mode}
 }
 
 export function ledgerTransportAvailable(): boolean {
