@@ -4,6 +4,42 @@
         "body": "모바일 기기에서 Anchor로 스캔하거나 아래 버튼을 클릭하여 이 기기에서 여세요.",
         "link": "Anchor 실행"
     },
+    "mode": {
+        "title": "Anchor를 어떻게 사용하시나요?",
+        "body": "요청을 승인할 위치를 선택하세요. 다음 로그인 시 다른 방법을 선택할 수 있습니다.",
+        "web": {
+            "label": "이 브라우저에서 anchorwallet.io 사용",
+            "detail": "패스키 또는 Ledger 사용",
+            "detail_no_ledger": "패스키 사용"
+        },
+        "app": {
+            "label": "Anchor 앱으로",
+            "detail": "이 기기 또는 다른 기기에서"
+        },
+        "switch": {
+            "to_web": "대신 이 브라우저에서 Anchor 사용",
+            "to_app": "대신 Anchor 앱 사용"
+        }
+    },
+    "fallback": {
+        "body": "Anchor 앱이 없으신가요?",
+        "label": "대신 이 브라우저에서 계속"
+    },
+    "recovery": {
+        "title": "요청이 취소되었습니다",
+        "body": "다시 시도할 방법을 선택하세요."
+    },
+    "web": {
+        "waiting": {
+            "title": "Anchor에서 승인",
+            "body": "Anchor 창에서 승인해 주세요."
+        },
+        "blocked": {
+            "title": "팝업이 차단됨",
+            "body": "브라우저에서 팝업을 차단했습니다. Anchor 창을 직접 열어 주세요.",
+            "label": "Anchor 열기"
+        }
+    },
     "transact": {
         "title": "Anchor로 완료",
         "body": "이 거래를 검토하고 승인하려면 \"{{channelName}}\"에서 Anchor 지갑을 여세요.",

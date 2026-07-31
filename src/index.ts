@@ -1,46 +1,48 @@
-import {send} from '@greymass/buoy'
 import {
     AbstractWalletPlugin,
-    CallbackPayload,
-    Cancelable,
+    ChainDefinition,
     Checksum256,
     LoginContext,
     Logo,
     PermissionLevel,
     PrivateKey,
-    PromptElement,
-    PromptResponse,
     PublicKey,
     ResolvedSigningRequest,
-    Serializer,
     TransactContext,
     WalletPluginConfig,
     WalletPluginLoginResponse,
     WalletPluginMetadata,
     WalletPluginSignResponse,
 } from '@wharfkit/session'
-import {
-    createIdentityRequest,
-    extractSignaturesFromCallback,
-    generateReturnUrl,
-    isAppleHandheld,
-    isCallback,
-    isKnownMobile,
-    LinkInfo,
-    sealMessage,
-    setTransactionCallback,
-    verifyLoginCallbackResponse,
-    waitForCallback,
-} from '@wharfkit/protocol-esr'
+import {Checksum256Type} from '@wharfkit/antelope'
+import {createIdentityRequest} from '@wharfkit/protocol-esr'
 
 import WebSocket from 'isomorphic-ws'
 
 import defaultTranslations from './translations'
+import {resolveWebAuthenticatorUrl} from './chains'
+import {AnchorMode, promptForMode, promptForRecovery, readMode, writeMode} from './mode'
+import {AnchorRequestCancelledError} from './transports/errors'
+import {NativeTransport} from './transports/native'
+import {openAuthenticatorWindow, WebTransport} from './transports/web'
+import {IdentityRequestBundle, Translator, TransportOptions} from './transports/types'
 
-interface WalletPluginOptions {
+/** Options controlling Anchor's native and browser transports. */
+export interface WalletPluginAnchorOptions {
+    /** Buoy callback service URL. */
     buoyUrl?: string
+    /** WebSocket override forwarded to Buoy callback handling. */
     buoyWs?: WebSocket
+    /** Extra or replacement web-authenticator URLs keyed by chain ID. */
+    webAuthenticatorUrls?: Record<string, string>
+    /** Delay in milliseconds before app login offers the browser fallback. */
+    webFallbackDelayMs?: number
+    /** Explicit login route; omit it to ask on each supported-chain login. */
+    mode?: AnchorMode
 }
+
+/** Default delay before app login offers the browser fallback, in milliseconds. */
+export const DEFAULT_WEB_FALLBACK_DELAY_MS = 8000
 export class WalletPluginAnchor extends AbstractWalletPlugin {
     chain: Checksum256 | undefined
     auth: PermissionLevel | undefined
@@ -52,6 +54,13 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
     buoyUrl: string
     buoyWs: WebSocket | undefined
 
+    webAuthenticatorUrls: Record<string, string>
+    webFallbackDelayMs: number
+
+    private native: NativeTransport
+    private web: WebTransport
+    private loginModeOverride: AnchorMode | undefined
+
     /**
      * The unique identifier for the wallet plugin.
      */
@@ -62,11 +71,28 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
      */
     translations = defaultTranslations
 
-    constructor(options?: WalletPluginOptions) {
+    constructor(options?: WalletPluginAnchorOptions) {
         super()
 
         this.buoyUrl = options?.buoyUrl || 'https://cb.anchor.link'
         this.buoyWs = options?.buoyWs
+        this.webAuthenticatorUrls = options?.webAuthenticatorUrls || {}
+        this.webFallbackDelayMs = options?.webFallbackDelayMs ?? DEFAULT_WEB_FALLBACK_DELAY_MS
+
+        // SessionKit.restore() reassigns `this.data`, so transports must read it live.
+        const currentData = () => this.data
+        const transportOptions: TransportOptions = {
+            id: this.id,
+            get data() {
+                return currentData()
+            },
+            buoyUrl: this.buoyUrl,
+            buoyWs: this.buoyWs,
+        }
+        this.native = new NativeTransport(transportOptions)
+        this.web = new WebTransport(transportOptions)
+
+        this.setMode(options?.mode)
     }
 
     /**
@@ -91,22 +117,46 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         homepage: 'https://greymass.com/anchor',
         download: 'https://greymass.com/anchor/download',
     })
-    /**
-     * Performs the wallet logic required to login and return the chain and permission level to use.
-     *
-     * @param options WalletPluginLoginOptions
-     * @returns Promise<WalletPluginLoginResponse>
-     */
+
     login(context: LoginContext): Promise<WalletPluginLoginResponse> {
-        return new Promise((resolve, reject) => {
-            this.handleLogin(context)
-                .then((response) => {
-                    resolve(response)
-                })
-                .catch((error) => {
-                    reject(error)
-                })
-        })
+        return this.handleLogin(context)
+    }
+
+    /** Override login routing until cleared; pass `undefined` to restore the chooser. */
+    setMode(mode: AnchorMode | undefined) {
+        if (mode === undefined) {
+            this.loginModeOverride = undefined
+            delete this.data.mode
+            return
+        }
+        writeMode(this.data, mode)
+        this.loginModeOverride = mode
+    }
+
+    /** Return the mode stored or inferred for signing; this does not imply a login override. */
+    getMode(): AnchorMode | undefined {
+        return readMode(this.data)
+    }
+
+    /** Open the chain's web authenticator in a user gesture; unsupported chains return `null`. */
+    openWallet(chain?: ChainDefinition | Checksum256Type): Window | null {
+        return WalletPluginAnchor.openWallet(chain, this.webAuthenticatorUrls)
+    }
+
+    /** Open a chain's web authenticator with URL overrides; unsupported chains return `null`. */
+    static openWallet(
+        chain?: ChainDefinition | Checksum256Type,
+        webAuthenticatorUrls?: Record<string, string>
+    ): Window | null {
+        const chainId = chain && typeof chain === 'object' && 'id' in chain ? chain.id : chain
+        const url = resolveWebAuthenticatorUrl(
+            chainId as Checksum256Type | undefined,
+            webAuthenticatorUrls
+        )
+        if (!url) {
+            return null
+        }
+        return openAuthenticatorWindow(url)
     }
 
     async handleLogin(context: LoginContext): Promise<WalletPluginLoginResponse> {
@@ -114,287 +164,188 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             throw new Error('No UI available')
         }
 
-        // Retrieve translation helper from the UI, passing the app ID
         const t = context.ui.getTranslate(this.id)
+        const webUrl = resolveWebAuthenticatorUrl(context.chain?.id, this.webAuthenticatorUrls)
+        try {
+            const bundle = (await createIdentityRequest(
+                context,
+                this.buoyUrl
+            )) as IdentityRequestBundle
 
-        // Create the identity request to be presented to the user
-        const {callback, request, sameDeviceRequest, requestKey, privateKey} =
-            await createIdentityRequest(context, this.buoyUrl)
-
-        // Elements for the login prompt
-        const elements: PromptElement[] = [
-            {
-                type: 'link',
-                label: t('login.link', {default: 'Launch Anchor'}),
-                data: {
-                    href: sameDeviceRequest.encode(true, false, 'esr:'),
-                    label: t('login.link', {default: 'Launch Anchor'}),
-                    variant: 'primary',
-                },
-            },
-        ]
-
-        // If we know this is NOT a mobile device, show the QR code
-        if (!isKnownMobile()) {
-            elements.unshift({
-                type: 'qr',
-                data: request.encode(true, false, 'esr:'),
-            })
-        }
-
-        // Automatically try to open the link
-        window.location.href = sameDeviceRequest.encode(true, false, 'esr:')
-
-        // Tell Wharf we need to prompt the user with a QR code and a button
-        const promptResponse = context.ui?.prompt({
-            title: t('login.title', {default: 'Connect with Anchor'}),
-            body: t('login.body', {
-                default:
-                    'Scan with Anchor on your mobile device or click the button below to open on this device.',
-            }),
-            elements,
-        })
-
-        promptResponse.catch(() => {
-            // eslint-disable-next-line no-console
-            console.info('Modal closed')
-        })
-
-        // Await a promise race to wait for either the wallet response or the cancel
-        const callbackResponse: CallbackPayload = await waitForCallback(callback, this.buoyWs, t)
-        verifyLoginCallbackResponse(callbackResponse, context)
-
-        if (!callbackResponse.cid || !callbackResponse.sa || !callbackResponse.sp) {
-            throw new Error('Invalid callback response')
-        }
-
-        if (callbackResponse.link_ch && callbackResponse.link_key && callbackResponse.link_name) {
-            this.data.requestKey = requestKey
-            this.data.privateKey = privateKey
-            this.data.signerKey =
-                callbackResponse.link_key && PublicKey.from(callbackResponse.link_key)
-            this.data.channelUrl = callbackResponse.link_ch
-            this.data.channelName = callbackResponse.link_name
-
-            try {
-                if (callbackResponse.link_meta) {
-                    const metadata = JSON.parse(callbackResponse.link_meta)
-                    this.data.sameDevice = metadata.sameDevice
-                    this.data.launchUrl = metadata.launchUrl
-                    this.data.triggerUrl = metadata.triggerUrl
-                }
-            } catch (e) {
-                // console.log('Error processing link_meta', e)
+            // Native-only chain: the question has no second answer, so never ask it.
+            if (!webUrl) {
+                return await this.native.login(context, bundle, t)
             }
-        }
 
-        const resolvedResponse = await ResolvedSigningRequest.fromPayload(
-            callbackResponse,
-            context.esrOptions
-        )
+            if (this.loginModeOverride) {
+                return await this.loginWithSwitch(
+                    context,
+                    bundle,
+                    t,
+                    webUrl,
+                    this.loginModeOverride,
+                    true
+                )
+            }
 
-        const identityProof = resolvedResponse.getIdentityProof(callbackResponse.sig)
+            const {mode, popup} = await this.chooseMode(context, bundle, t, webUrl)
+            writeMode(this.data, mode)
 
-        return {
-            chain: Checksum256.from(callbackResponse.cid),
-            permissionLevel: PermissionLevel.from({
-                actor: callbackResponse.sa,
-                permission: callbackResponse.sp,
-            }),
-            identityProof,
+            if (mode === 'web') {
+                return await this.web.login(context, bundle, webUrl, popup)
+            }
+            // Freshly chosen: no immediate switch link, but still recover from a silent deep link.
+            return await this.loginWithSwitch(context, bundle, t, webUrl, 'app', false)
+        } catch (error) {
+            if (!(error instanceof AnchorRequestCancelledError)) {
+                throw error
+            }
+            return this.recoverLogin(context, t, webUrl)
         }
     }
 
-    /**
-     * Performs the wallet logic required to sign a transaction and return the signature.
-     *
-     * @param chain ChainDefinition
-     * @param resolved ResolvedSigningRequest
-     * @returns Promise<Signature>
-     */
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    private async recoverLogin(
+        context: LoginContext,
+        t: Translator,
+        webUrl?: string
+    ): Promise<WalletPluginLoginResponse> {
+        for (;;) {
+            const bundle = (await createIdentityRequest(
+                context,
+                this.buoyUrl
+            )) as IdentityRequestBundle
+            const {mode, popup} = await this.chooseRecoveryMode(context, bundle, t, webUrl)
+            writeMode(this.data, mode)
+
+            try {
+                return mode === 'web' && webUrl
+                    ? await this.web.login(context, bundle, webUrl, popup)
+                    : await this.native.login(context, bundle, t)
+            } catch (error) {
+                if (!(error instanceof AnchorRequestCancelledError)) {
+                    throw error
+                }
+            }
+        }
+    }
+
+    // The alternate transport needs its own identity request: two receivers on one channel race.
+    private async loginWithSwitch(
+        context: LoginContext,
+        bundle: IdentityRequestBundle,
+        t: Translator,
+        webUrl: string,
+        mode: AnchorMode,
+        immediate: boolean
+    ): Promise<WalletPluginLoginResponse> {
+        const alternateBundle = (await createIdentityRequest(
+            context,
+            this.buoyUrl
+        )) as IdentityRequestBundle
+        const alternateUrl = this.web.loginUrl(context, alternateBundle, webUrl)
+
+        let popup: Window | null = null
+        let switchTo: () => void = () => undefined
+        const switched = new Promise<'switched'>((resolve) => {
+            switchTo = () => {
+                if (mode === 'app') {
+                    // Must happen inside the click, before any await.
+                    popup = this.web.openWindow(alternateUrl)
+                }
+                resolve('switched')
+            }
+        })
+
+        const primary =
+            mode === 'app'
+                ? this.native.login(context, bundle, t, {
+                      immediate,
+                      delayMs: this.webFallbackDelayMs,
+                      onSelect: () => switchTo(),
+                  })
+                : this.web.login(context, bundle, webUrl, undefined, {onSelect: () => switchTo()})
+
+        // The loser of the race is abandoned; swallow its eventual rejection.
+        primary.catch(() => undefined)
+
+        const winner = await Promise.race([primary.then(() => 'primary' as const), switched])
+        if (winner === 'primary') {
+            return primary
+        }
+
+        const next: AnchorMode = mode === 'app' ? 'web' : 'app'
+        writeMode(this.data, next)
+        return next === 'web'
+            ? this.web.login(context, alternateBundle, webUrl, popup)
+            : this.native.login(context, alternateBundle, t)
+    }
+
+    /** The browser popup opens inside the click handler, before this promise resolves. */
+    private chooseMode(
+        context: LoginContext,
+        bundle: IdentityRequestBundle,
+        t: Translator,
+        webUrl: string
+    ): Promise<{mode: AnchorMode; popup?: Window | null}> {
+        return new Promise((resolve, reject) => {
+            const url = this.web.loginUrl(context, bundle, webUrl)
+            const prompt = promptForMode(context, t, (mode) => {
+                if (mode === 'web') {
+                    resolve({mode, popup: this.web.openWindow(url)})
+                } else {
+                    resolve({mode})
+                }
+            })
+            prompt.catch(reject)
+        })
+    }
+
+    private chooseRecoveryMode(
+        context: LoginContext,
+        bundle: IdentityRequestBundle,
+        t: Translator,
+        webUrl?: string
+    ): Promise<{mode: AnchorMode; popup?: Window | null}> {
+        return new Promise((resolve, reject) => {
+            const prompt = promptForRecovery(context, t, Boolean(webUrl), (mode) => {
+                if (mode === 'web' && webUrl) {
+                    const url = this.web.loginUrl(context, bundle, webUrl)
+                    resolve({mode, popup: this.web.openWindow(url)})
+                } else {
+                    resolve({mode})
+                }
+            })
+            prompt.catch(reject)
+        })
+    }
+
     sign(
         resolved: ResolvedSigningRequest,
         context: TransactContext
     ): Promise<WalletPluginSignResponse> {
-        return this.handleSigningRequest(resolved, context)
+        return this.handleSign(resolved, context)
     }
 
-    private async handleSigningRequest(
+    private async handleSign(
         resolved: ResolvedSigningRequest,
         context: TransactContext
     ): Promise<WalletPluginSignResponse> {
-        if (!context.ui) {
-            throw new Error('No UI available')
-        }
+        // Never asks a question; v1.x sessions predate the concept and are always native.
+        const mode = readMode(this.data) || 'app'
 
-        // Retrieve translation helper from the UI, passing the app ID
-        const t = context.ui.getTranslate(this.id)
-
-        // Set expiration time frames for the request
-        const expiration = resolved.transaction.expiration.toDate()
-        const now = new Date()
-        const expiresIn = Math.floor(expiration.getTime() - now.getTime())
-
-        // Create a new signing request based on the existing resolved request
-        const modifiedRequest = await context.createRequest({transaction: resolved.transaction})
-
-        // Set the expiration on the request LinkInfo
-        modifiedRequest.setInfoKey(
-            'link',
-            LinkInfo.from({
-                expiration,
-            })
-        )
-
-        // Add the callback to the request
-        const callback = setTransactionCallback(modifiedRequest, this.buoyUrl)
-
-        const request = modifiedRequest.encode(true, false)
-
-        // Mobile will return true or false, desktop will return undefined
-        const isSameDevice = this.data.sameDevice !== false
-
-        // Same device request
-        const sameDeviceRequest = modifiedRequest.clone()
-        const returnUrl = generateReturnUrl()
-        sameDeviceRequest.setInfoKey('same_device', true)
-        if (returnUrl) {
-            sameDeviceRequest.setInfoKey('return_path', returnUrl)
-        }
-
-        if (this.data.sameDevice) {
-            if (this.data.launchUrl) {
-                window.location.href = this.data.launchUrl
-            } else if (isAppleHandheld()) {
-                window.location.href = 'anchor://link'
+        if (mode === 'web') {
+            const webUrl = resolveWebAuthenticatorUrl(context.chain?.id, this.webAuthenticatorUrls)
+            if (!webUrl) {
+                throw new Error(
+                    `This session signs in the browser, but there is no Anchor web authenticator for chain ${context.chain?.id}.`
+                )
             }
+            return this.web.sign(resolved, context, webUrl)
         }
 
-        const signManually = () => {
-            context.ui?.prompt({
-                title: t('transact.sign_manually.title', {default: 'Sign manually'}),
-                body: t('transact.sign_manually.body', {
-                    default:
-                        'Scan the QR-code with Anchor on another device or use the button to open it here.',
-                }),
-                elements: [
-                    {
-                        type: 'qr',
-                        data: String(request),
-                    },
-                    {
-                        type: 'link',
-                        label: t('transact.sign_manually.link.title', {default: 'Open Anchor'}),
-                        data: {
-                            href: String(sameDeviceRequest),
-                            label: t('transact.sign_manually.link.title', {default: 'Open Anchor'}),
-                        },
-                    },
-                ],
-            })
-        }
-
-        // Tell Wharf we need to prompt the user with a QR code and a button
-        const promptPromise: Cancelable<PromptResponse> = context.ui.prompt({
-            title: t('transact.title', {default: 'Complete using Anchor'}),
-            body: t('transact.body', {
-                channelName: this.data.channelName,
-                default: `Please open your Anchor Wallet on "${this.data.channelName}" to review and approve this transaction.`,
-            }),
-            elements: [
-                {
-                    type: 'countdown',
-                    data: {
-                        label: t('transact.await', {default: 'Waiting for response from Anchor'}),
-                        end: expiration.toISOString(),
-                    },
-                },
-                {
-                    type: 'button',
-                    label: t('transact.label', {default: 'Sign manually or with another device'}),
-                    data: {
-                        onClick: isSameDevice
-                            ? () => (window.location.href = sameDeviceRequest.encode())
-                            : signManually,
-                        label: t('transact.label', {
-                            default: 'Sign manually or with another device',
-                        }),
-                    },
-                },
-            ],
-        })
-
-        // Create a timer to test the external cancelation of the prompt, if defined
-        const timer = setTimeout(() => {
-            if (!context.ui) {
-                throw new Error('No UI available')
-            }
-            promptPromise.cancel(
-                t('error.expired', {default: 'The request expired, please try again.'})
-            )
-        }, expiresIn)
-
-        // Clear the timeout if the UI throws (which generally means it closed)
-        promptPromise.catch(() => clearTimeout(timer))
-
-        // Wait for the callback from the wallet
-        const callbackPromise = waitForCallback(callback, this.buoyWs, t)
-
-        // Assemble and send the payload to the wallet
-        if (this.data.channelUrl) {
-            const service = new URL(this.data.channelUrl).origin
-            const channel = new URL(this.data.channelUrl).pathname.substring(1)
-            const sealedMessage = await sealMessage(
-                (this.data.sameDevice ? sameDeviceRequest : modifiedRequest).encode(
-                    true,
-                    false,
-                    'esr:'
-                ),
-                PrivateKey.from(this.data.privateKey),
-                PublicKey.from(this.data.signerKey)
-            )
-
-            send(Serializer.encode({object: sealedMessage}).array, {
-                service,
-                channel,
-            })
-        } else {
-            // If no channel is defined, fallback to the same device request and trigger immediately
-            window.location.href = sameDeviceRequest.encode()
-        }
-
-        // Wait for either the callback or the prompt to resolve
-        const callbackResponse = await Promise.race([callbackPromise, promptPromise]).finally(
-            () => {
-                // Clear the automatic timeout once the race resolves
-                clearTimeout(timer)
-            }
-        )
-
-        const wasSuccessful =
-            isCallback(callbackResponse) &&
-            extractSignaturesFromCallback(callbackResponse).length > 0
-
-        if (wasSuccessful) {
-            // If the callback was resolved, create a new request from the response
-            const resolvedRequest = await ResolvedSigningRequest.fromPayload(
-                callbackResponse,
-                context.esrOptions
-            )
-
-            // Return the new request and the signatures from the wallet
-            return {
-                signatures: extractSignaturesFromCallback(callbackResponse),
-                resolved: resolvedRequest,
-            }
-        }
-
-        const errorString = t('error.not_completed', {default: 'The request was not completed.'})
-
-        promptPromise.cancel(errorString)
-
-        // This shouldn't ever trigger, but just in case
-        throw new Error(errorString)
+        return this.native.sign(resolved, context)
     }
 }
+
+export {DEFAULT_WEB_AUTHENTICATOR_URLS} from './chains'
+export type {AnchorMode} from './mode'

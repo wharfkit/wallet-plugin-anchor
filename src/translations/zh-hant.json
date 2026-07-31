@@ -4,6 +4,42 @@
         "body": "在您的裝置上使用Anchor掃描或者點擊下方按鈕開啟。",
         "link": "啟動Anchor"
     },
+    "mode": {
+        "title": "您要如何使用 Anchor？",
+        "body": "選擇批准請求的位置。下次登入時，您可以選擇其他方式。",
+        "web": {
+            "label": "在此瀏覽器中使用 anchorwallet.io",
+            "detail": "使用通行密鑰或 Ledger",
+            "detail_no_ledger": "使用通行密鑰"
+        },
+        "app": {
+            "label": "使用 Anchor 應用程式",
+            "detail": "在此裝置或其他裝置上"
+        },
+        "switch": {
+            "to_web": "改在此瀏覽器中使用 Anchor",
+            "to_app": "改用 Anchor 應用程式"
+        }
+    },
+    "fallback": {
+        "body": "沒有安裝 Anchor 應用程式？",
+        "label": "改在此瀏覽器中繼續"
+    },
+    "recovery": {
+        "title": "請求已取消",
+        "body": "請選擇重新嘗試的方式。"
+    },
+    "web": {
+        "waiting": {
+            "title": "在 Anchor 中批准",
+            "body": "請在 Anchor 視窗中批准。"
+        },
+        "blocked": {
+            "title": "彈出式視窗已遭封鎖",
+            "body": "瀏覽器封鎖了彈出式視窗。請手動開啟 Anchor 視窗。",
+            "label": "開啟 Anchor"
+        }
+    },
     "transact": {
         "title": "完成使用Anchor",
         "body": "請在\"{{channelName}}\"上開啟您的Anchor錢包以瀏覽並批准此交易。",
