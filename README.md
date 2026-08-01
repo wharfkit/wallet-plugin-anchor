@@ -1,6 +1,6 @@
 # @wharfkit/wallet-plugin-anchor
 
-A Session Kit wallet plugin for the [Anchor](https://www.greymass.com/anchor) wallet.
+A Session Kit wallet plugin for the [Anchor](https://anchorwallet.io) wallet.
 
 ## Usage
 
