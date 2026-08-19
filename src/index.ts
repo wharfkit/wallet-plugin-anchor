@@ -172,6 +172,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         }
 
         const perCall = readLoginOptions(this.id, context.arbitrary)
+        const preopened = perCall.popup
         const t = context.ui.getTranslate(this.id)
         const webUrl = resolveWebAuthenticatorUrl(context.chain?.id, this.webAuthenticatorUrls)
         try {
@@ -182,16 +183,25 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
 
             // Native-only chain: the question has no second answer, so never ask it.
             if (!webUrl) {
+                preopened?.close()
                 return await this.native.login(context, bundle, t)
             }
 
             const forcedMode = perCall.mode ?? this.loginModeOverride
             if (forcedMode) {
                 writeMode(this.data, forcedMode)
-                return await this.loginWithSwitch(context, bundle, t, webUrl, forcedMode, true)
+                return await this.loginWithSwitch(
+                    context,
+                    bundle,
+                    t,
+                    webUrl,
+                    forcedMode,
+                    true,
+                    preopened
+                )
             }
 
-            const {mode, popup} = await this.chooseMode(context, bundle, t, webUrl)
+            const {mode, popup} = await this.chooseMode(context, bundle, t, webUrl, preopened)
             writeMode(this.data, mode)
 
             if (mode === 'web') {
@@ -200,6 +210,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
             // Freshly chosen: no immediate switch link, but still recover from a silent deep link.
             return await this.loginWithSwitch(context, bundle, t, webUrl, 'app', false)
         } catch (error) {
+            preopened?.close()
             if (!(error instanceof AnchorRequestCancelledError)) {
                 throw error
             }
@@ -239,8 +250,19 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         t: Translator,
         webUrl: string,
         mode: AnchorMode,
-        immediate: boolean
+        immediate: boolean,
+        preopened?: Window
     ): Promise<WalletPluginLoginResponse> {
+        if (preopened) {
+            if (mode === 'web') {
+                // Navigate before the alternate-request await; the caller's popup is idling on a landing page.
+                preopened.location.href = this.web.loginUrl(context, bundle, webUrl)
+            } else {
+                preopened.close()
+                preopened = undefined
+            }
+        }
+
         const alternateBundle = (await createIdentityRequest(
             context,
             this.buoyUrl
@@ -266,7 +288,7 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
                       delayMs: this.webFallbackDelayMs,
                       onSelect: () => switchTo(),
                   })
-                : this.web.login(context, bundle, webUrl, undefined, {onSelect: () => switchTo()})
+                : this.web.login(context, bundle, webUrl, preopened, {onSelect: () => switchTo()})
 
         // The loser of the race is abandoned; swallow its eventual rejection.
         primary.catch(() => undefined)
@@ -288,14 +310,21 @@ export class WalletPluginAnchor extends AbstractWalletPlugin {
         context: LoginContext,
         bundle: IdentityRequestBundle,
         t: Translator,
-        webUrl: string
+        webUrl: string,
+        preopened?: Window
     ): Promise<{mode: AnchorMode; popup?: Window | null}> {
         return new Promise((resolve, reject) => {
             const url = this.web.loginUrl(context, bundle, webUrl)
             const prompt = promptForMode(context, t, (mode) => {
                 if (mode === 'web') {
-                    resolve({mode, popup: this.web.openWindow(url)})
+                    if (preopened) {
+                        preopened.location.href = url
+                        resolve({mode, popup: preopened})
+                    } else {
+                        resolve({mode, popup: this.web.openWindow(url)})
+                    }
                 } else {
+                    preopened?.close()
                     resolve({mode})
                 }
             })

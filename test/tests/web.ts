@@ -2,6 +2,10 @@ import {assert} from 'chai'
 import {ChainDefinition, LoginContext} from '@wharfkit/session'
 import {APIClient, Bytes, PermissionLevel, PrivateKey, UInt64} from '@wharfkit/antelope'
 import {unsealMessage} from '@wharfkit/sealed-messages'
+import * as buoy from '@greymass/buoy'
+import sinon from 'sinon'
+
+import {mockCallbackPayload} from '$test/utils/mock-esr'
 
 import {WebTransport} from '$lib/transports/web'
 import {makeMockUI} from '$test/utils/mock-ui'
@@ -110,9 +114,36 @@ suite('web transport', function () {
             await new Promise((resolve) => setTimeout(resolve, 10))
             const args = ui.lastPrompt()!
             assert.equal(args.title, 'Pop-up blocked')
-            assert.equal((args.elements as any[])[0].type, 'button')
+            const element = (args.elements as any[])[0]
+            assert.equal(element.type, 'link', 'a real link click is never popup-blocked')
+            assert.include(element.data.href, 'https://jungle4.anchorwallet.io/sign?')
+            assert.include(element.data.href, 'esr=esr-encoded-request')
+            assert.notEqual(element.data.button, false, 'rendered as a button, not a text link')
         } finally {
             ;(window as any).open = originalOpen
+        }
+    })
+
+    test('a blocked login still completes once the callback arrives', async function () {
+        const receive = sinon.stub(buoy, 'receive').resolves(JSON.stringify(mockCallbackPayload))
+        const originalOpen = window.open
+        ;(window as any).open = () => null
+        try {
+            const ui = makeMockUI()
+            const transport = new WebTransport({
+                id: 'anchor',
+                data: {},
+                buoyUrl: 'https://cb.anchor.link',
+            })
+            const response = await transport.login(
+                makeLoginContext(ui),
+                makeBundle(),
+                'https://jungle4.anchorwallet.io'
+            )
+            assert.equal(String(response.permissionLevel), 'wharfkit1115@test')
+        } finally {
+            ;(window as any).open = originalOpen
+            receive.restore()
         }
     })
 

@@ -774,3 +774,112 @@ suite('per-call mode', function () {
         assert.equal(ui.lastPrompt()!.title, 'Connect with Anchor')
     })
 })
+
+suite('caller-opened popup', function () {
+    this.timeout(20 * 1000)
+
+    function contextWith(ui: any, chain: ChainDefinition, arbitrary: Record<string, any>) {
+        return {...(makeLoginContext(ui, chain) as any), arbitrary} as LoginContext
+    }
+
+    function makeCallerPopup() {
+        const popup = {
+            closed: false,
+            close() {
+                popup.closed = true
+            },
+            location: {href: 'https://jungle4.anchorwallet.io/'},
+        }
+        return popup as unknown as Window & {location: {href: string}}
+    }
+
+    test('a forced web login navigates the popup instead of opening a second one', async function () {
+        ;(window.open as any).calls.length = 0
+        const ui = makeMockUI()
+        const popup = makeCallerPopup()
+        const plugin = new WalletPluginAnchor({mode: 'web'})
+        plugin.login(contextWith(ui, jungle4, {anchor: {popup}})).catch(() => undefined)
+        await settle()
+
+        assert.include(
+            (popup as any).location.href,
+            'https://jungle4.anchorwallet.io/sign?',
+            'the caller popup is pointed at the sign URL'
+        )
+        assert.equal((window.open as any).calls.length, 0, 'no second popup is opened')
+    })
+
+    test('a per-call web mode navigates the popup too', async function () {
+        ;(window.open as any).calls.length = 0
+        const ui = makeMockUI()
+        const popup = makeCallerPopup()
+        const plugin = new WalletPluginAnchor()
+        plugin.login(contextWith(ui, jungle4, {anchor: {mode: 'web', popup}})).catch(() => undefined)
+        await settle()
+
+        assert.include((popup as any).location.href, 'https://jungle4.anchorwallet.io/sign?')
+        assert.equal((window.open as any).calls.length, 0)
+    })
+
+    test('a completed login closes the caller popup', async function () {
+        const receive = sinon.stub(buoy, 'receive').resolves(JSON.stringify(mockCallbackPayload))
+        try {
+            const ui = makeMockUI()
+            const popup = makeCallerPopup()
+            const plugin = new WalletPluginAnchor({mode: 'web'})
+            const response = await plugin.login(contextWith(ui, jungle4, {anchor: {popup}}))
+            assert.equal(String(response.permissionLevel), 'wharfkit1115@test')
+            assert.isTrue((popup as any).closed, 'the popup is closed after the callback')
+        } finally {
+            receive.restore()
+        }
+    })
+
+    test('a forced app login closes the unused caller popup', async function () {
+        const ui = makeMockUI()
+        const popup = makeCallerPopup()
+        const plugin = new WalletPluginAnchor({mode: 'app'})
+        plugin.login(contextWith(ui, jungle4, {anchor: {popup}})).catch(() => undefined)
+        await settle()
+
+        assert.isTrue((popup as any).closed, 'the app flow has no use for the popup')
+        assert.equal(ui.lastPrompt()!.title, 'Connect with Anchor')
+    })
+
+    test('a native-only chain closes the unused caller popup', async function () {
+        const ui = makeMockUI()
+        const popup = makeCallerPopup()
+        const plugin = new WalletPluginAnchor()
+        plugin.login(contextWith(ui, wax, {anchor: {popup}})).catch(() => undefined)
+        await settle()
+
+        assert.isTrue((popup as any).closed)
+        assert.equal(ui.lastPrompt()!.title, 'Connect with Anchor')
+    })
+
+    test('choosing the browser on the choice screen reuses the caller popup', async function () {
+        ;(window.open as any).calls.length = 0
+        const ui = makeMockUI()
+        const popup = makeCallerPopup()
+        const plugin = new WalletPluginAnchor()
+        plugin.login(contextWith(ui, jungle4, {anchor: {popup}})).catch(() => undefined)
+        await settle()
+
+        assert.equal(ui.lastPrompt()!.title, 'How do you use Anchor?')
+        ui.clickButton(0)
+        assert.include((popup as any).location.href, 'https://jungle4.anchorwallet.io/sign?')
+        assert.equal((window.open as any).calls.length, 0, 'the caller popup is reused')
+    })
+
+    test('choosing the app on the choice screen closes the caller popup', async function () {
+        const ui = makeMockUI()
+        const popup = makeCallerPopup()
+        const plugin = new WalletPluginAnchor()
+        plugin.login(contextWith(ui, jungle4, {anchor: {popup}})).catch(() => undefined)
+        await settle()
+
+        ui.clickButton(1)
+        await settle()
+        assert.isTrue((popup as any).closed)
+    })
+})

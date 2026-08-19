@@ -186,6 +186,17 @@ suite('login options', function () {
         assert.deepEqual(readLoginOptions('anchor', {anchor: {mode: undefined}}), {})
     })
 
+    test('reads a caller-opened popup alongside the mode', function () {
+        const popup = {closed: false} as unknown as Window
+        assert.equal(readLoginOptions('anchor', {anchor: {popup}}).popup, popup)
+        assert.equal(readLoginOptions('anchor', {anchor: {mode: 'web', popup}}).popup, popup)
+        assert.equal(readLoginOptions('anchor', {anchor: {mode: 'web', popup}}).mode, 'web')
+    })
+
+    test('a null popup is dropped rather than forwarded', function () {
+        assert.isUndefined(readLoginOptions('anchor', {anchor: {popup: null}}).popup)
+    })
+
     test('another plugin\'s options are ignored', function () {
         assert.deepEqual(readLoginOptions('anchor', {other: {mode: 'web'}}), {})
     })

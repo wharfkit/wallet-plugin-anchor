@@ -218,7 +218,7 @@ export class WebTransport {
         })
     }
 
-    /** Popup blocked: offer a button whose click carries the gesture we lacked. */
+    /** Popup blocked: offer a real link, which no popup blocker touches, and listen for the callback. */
     private promptManualOpen(
         url: string,
         receiveOptions: ReceiveOptions,
@@ -228,6 +228,10 @@ export class WebTransport {
             const t = ui?.getTranslate(this.options.id)
             const translate = (key: string, fallbackText: string) =>
                 t ? t(key, {default: fallbackText}) : fallbackText
+            const cancelledMessage = translate(
+                'error.cancelled',
+                'The request was cancelled from Anchor.'
+            )
             const openLabel = translate('web.blocked.label', 'Open Anchor')
             ui?.prompt({
                 title: translate('web.blocked.title', 'Pop-up blocked'),
@@ -237,21 +241,26 @@ export class WebTransport {
                 ),
                 elements: [
                     {
-                        type: 'button',
+                        type: 'link',
                         label: openLabel,
                         data: {
+                            href: url,
                             label: openLabel,
                             variant: 'primary',
-                            onClick: () => {
-                                this.awaitPopup(url, receiveOptions, ui, this.openWindow(url)).then(
-                                    resolve,
-                                    reject
-                                )
-                            },
                         },
                     },
                 ],
             }).catch(reject)
+
+            waitForCallback(receiveOptions, this.options.buoyWs, t)
+                .then((response) => resolve({payload: response}))
+                .catch((error) => {
+                    if (error instanceof Error && error.message === cancelledMessage) {
+                        reject(new AnchorRequestCancelledError(error.message))
+                    } else {
+                        reject(error)
+                    }
+                })
         })
     }
 }

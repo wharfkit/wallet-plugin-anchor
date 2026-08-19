@@ -32,6 +32,8 @@ export function writeMode(data: Record<string, any>, mode: AnchorMode) {
 /** Per-call options from `login({arbitrary: {anchor: {...}}})`. */
 export interface AnchorLoginOptions {
     mode?: AnchorMode
+    /** Window the caller opened inside its own click, for the web transport to navigate. */
+    popup?: Window
 }
 
 /** Read one plugin's entry out of the shared arbitrary bag. Throws on a bad value. */
@@ -43,13 +45,17 @@ export function readLoginOptions(id: string, arbitrary?: Record<string, any>): A
     if (typeof options !== 'object') {
         throw new Error(`Invalid Anchor login options: ${options}`)
     }
-    if (options.mode === undefined) {
-        return {}
+    const result: AnchorLoginOptions = {}
+    if (options.mode !== undefined) {
+        if (!isValidMode(options.mode)) {
+            throw new Error(`Invalid Anchor mode: ${options.mode}`)
+        }
+        result.mode = options.mode
     }
-    if (!isValidMode(options.mode)) {
-        throw new Error(`Invalid Anchor mode: ${options.mode}`)
+    if (options.popup) {
+        result.popup = options.popup
     }
-    return {mode: options.mode}
+    return result
 }
 
 export function ledgerTransportAvailable(): boolean {
