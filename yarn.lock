@@ -708,15 +708,16 @@
     node-fetch "^2.6.1"
     tslib "^2.1.0"
 
-"@wharfkit/protocol-esr@^1.6.1":
-  version "1.6.1"
-  resolved "https://registry.npmjs.org/@wharfkit/protocol-esr/-/protocol-esr-1.6.1.tgz#84bc8f6d51e672e0b6cf8e8baf3dd4dae8d736ed"
-  integrity sha512-m6B28f56Jh+CEB/MI6VkdR+3sMihsdbQULCM5wg17DsorNBXbpwVGsAzJonmLrymhbp8sUDUkXlq0yWqoX7tuQ==
+"@wharfkit/protocol-esr@^1.7.0-rc1":
+  version "1.7.0-rc1"
+  resolved "https://registry.npmjs.org/@wharfkit/protocol-esr/-/protocol-esr-1.7.0-rc1.tgz#c02c0b7488ff866bd6b2471fa8b4449d0fb5ee21"
+  integrity sha512-PtD0JDBZr9GIhuLBdUKA+fFy1U544MOAfHtskzdtd+0QWS7imCGCe45Bfr66AXpQ9IQ/FUCwg8HFHRcwBNUZxg==
   dependencies:
     "@greymass/buoy" "^1.0.3"
     "@wharfkit/antelope" "^1.1.0"
     "@wharfkit/sealed-messages" "^1.2.0"
     isomorphic-ws "^5.0.0"
+    pako "^2.1.0"
     ws "^8.13.0"
 
 "@wharfkit/resources@^1.1.0":
