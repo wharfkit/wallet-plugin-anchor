@@ -16,16 +16,21 @@ import {
     WalletPluginSignResponse,
 } from '@wharfkit/session'
 import {
+    clearTransactionHandoff,
     extractSignaturesFromCallback,
     generateReturnUrl,
     isAppleHandheld,
     isCallback,
     isKnownMobile,
+    isSamePageReturn,
     LinkInfo,
     sealMessage,
     setTransactionCallback,
+    storeTransactionHandoff,
+    TransactionHandoff,
     verifyLoginCallbackResponse,
     waitForCallback,
+    waitForPageReturn,
 } from '@wharfkit/protocol-esr'
 
 import {AnchorRequestCancelledError} from './errors'
@@ -212,14 +217,6 @@ export class NativeTransport {
             sameDeviceRequest.setInfoKey('return_path', returnUrl)
         }
 
-        if (data.sameDevice) {
-            if (data.launchUrl) {
-                window.location.href = data.launchUrl
-            } else if (isAppleHandheld()) {
-                window.location.href = 'anchor://link'
-            }
-        }
-
         const signManually = () => {
             context.ui?.prompt({
                 title: t('transact.sign_manually.title', {default: 'Sign manually'}),
@@ -281,27 +278,81 @@ export class NativeTransport {
 
         promptPromise.catch(() => clearTimeout(timer))
 
-        const callbackPromise = waitForCallback(callback, this.options.buoyWs, t)
+        const callbackController = new AbortController()
+        const deferCallbackUntilReturn = data.sameDevice && returnUrl && isSamePageReturn(returnUrl)
+        const transactionHandoff: TransactionHandoff | null =
+            deferCallbackUntilReturn && returnUrl
+                ? {
+                      version: 1,
+                      returnUrl,
+                      callback,
+                      transactionId: String(resolved.transaction.id),
+                      chainId: String(context.chain.id),
+                      actor: String(context.permissionLevel.actor),
+                      permission: String(context.permissionLevel.permission),
+                      expiresAt: expiration.toISOString(),
+                  }
+                : null
 
-        if (data.channelUrl) {
-            const service = new URL(data.channelUrl).origin
-            const channel = new URL(data.channelUrl).pathname.substring(1)
-            const sealedMessage = await sealMessage(
-                (data.sameDevice ? sameDeviceRequest : modifiedRequest).encode(true, false, 'esr:'),
-                PrivateKey.from(data.privateKey),
-                PublicKey.from(data.signerKey)
-            )
+        // iOS Safari can open the return_path in a fresh tab; persist enough for it to finish the ceremony.
+        if (transactionHandoff) {
+            storeTransactionHandoff(transactionHandoff)
+        }
 
-            send(Serializer.encode({object: sealedMessage}).array, {service, channel})
-        } else {
-            // If no channel is defined, fallback to the same device request and trigger immediately
-            window.location.href = sameDeviceRequest.encode()
+        // A WebSocket left open while Safari suspends this page can swallow the signature; connect after return.
+        const callbackPromise = deferCallbackUntilReturn
+            ? waitForPageReturn(returnUrl!, callbackController.signal).then(() =>
+                  waitForCallback(callback, this.options.buoyWs, t)
+              )
+            : waitForCallback(callback, this.options.buoyWs, t)
+
+        try {
+            if (data.channelUrl) {
+                const service = new URL(data.channelUrl).origin
+                const channel = new URL(data.channelUrl).pathname.substring(1)
+                const sealedMessage = await sealMessage(
+                    (data.sameDevice ? sameDeviceRequest : modifiedRequest).encode(
+                        true,
+                        false,
+                        'esr:'
+                    ),
+                    PrivateKey.from(data.privateKey),
+                    PublicKey.from(data.signerKey)
+                )
+                const payload = Serializer.encode({object: sealedMessage}).array
+
+                if (data.sameDevice) {
+                    // Safari suspends this page the instant Anchor opens; the request must reach buoy first.
+                    await send(payload, {service, channel})
+                    if (data.launchUrl) {
+                        window.location.href = data.launchUrl
+                    } else if (isAppleHandheld()) {
+                        window.location.href = 'anchor://link'
+                    }
+                } else {
+                    send(payload, {service, channel})
+                }
+            } else {
+                // If no channel is defined, fallback to the same device request and trigger immediately
+                window.location.href = sameDeviceRequest.encode()
+            }
+        } catch (error) {
+            clearTimeout(timer)
+            // The abandoned page-return wait rejects on abort; swallow it.
+            callbackPromise.catch(() => undefined)
+            callbackController.abort()
+            promptPromise.cancel()
+            throw error
         }
 
         const callbackResponse = await Promise.race([callbackPromise, promptPromise]).finally(
             () => {
                 clearTimeout(timer)
+                callbackController.abort()
                 promptPromise.cancel()
+                if (transactionHandoff) {
+                    clearTransactionHandoff(transactionHandoff)
+                }
             }
         )
 
