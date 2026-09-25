@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> This package lives in the WharfKit monorepo at [wharfkit/js/packages/wallet-plugin-anchor](https://github.com/wharfkit/js/tree/dev/packages/wallet-plugin-anchor), and this repository is archived. Open new issues and pull requests on [wharfkit/js](https://github.com/wharfkit/js).
+
 # @wharfkit/wallet-plugin-anchor
 
 A Session Kit wallet plugin for the [Anchor](https://anchorwallet.io) wallet.
